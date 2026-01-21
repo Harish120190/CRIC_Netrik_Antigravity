@@ -1,0 +1,233 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Cricket-themed colors - Emerald greens like a cricket pitch */
+    --background: 150 20% 97%;
+    --foreground: 160 30% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 160 30% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 160 30% 10%;
+
+    /* Primary: Cricket field green */
+    --primary: 145 63% 32%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: Lighter green */
+    --secondary: 145 45% 92%;
+    --secondary-foreground: 145 63% 25%;
+
+    --muted: 150 15% 92%;
+    --muted-foreground: 150 10% 45%;
+
+    /* Accent: Golden amber for highlights */
+    --accent: 38 95% 55%;
+    --accent-foreground: 38 100% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 150 15% 88%;
+    --input: 150 15% 88%;
+    --ring: 145 63% 32%;
+
+    --radius: 0.75rem;
+
+    /* Custom cricket colors */
+    --pitch: 42 35% 75%;
+    --pitch-dark: 42 30% 45%;
+    --stumps: 30 60% 40%;
+    --ball-red: 0 75% 50%;
+    --ball-white: 0 0% 98%;
+    --scoreboard: 200 25% 15%;
+    --scoreboard-text: 48 100% 55%;
+    --live: 0 85% 55%;
+    --win: 145 70% 40%;
+    --loss: 0 70% 55%;
+
+    /* Gradients */
+    --gradient-pitch: linear-gradient(135deg, hsl(145 63% 32%) 0%, hsl(145 55% 42%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(38 95% 55%) 0%, hsl(45 100% 60%) 100%);
+    --gradient-scoreboard: linear-gradient(180deg, hsl(200 25% 12%) 0%, hsl(200 30% 18%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(145 63% 28%) 0%, hsl(145 55% 38%) 50%, hsl(150 20% 97%) 100%);
+
+    /* Shadows */
+    --shadow-card: 0 4px 20px -4px hsl(145 40% 20% / 0.12);
+    --shadow-elevated: 0 12px 40px -8px hsl(145 40% 20% / 0.2);
+    --shadow-glow: 0 0 30px hsl(145 63% 32% / 0.3);
+    --shadow-gold: 0 4px 20px hsl(38 95% 55% / 0.3);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 200 25% 8%;
+    --foreground: 150 15% 95%;
+
+    --card: 200 25% 12%;
+    --card-foreground: 150 15% 95%;
+
+    --popover: 200 25% 12%;
+    --popover-foreground: 150 15% 95%;
+
+    --primary: 145 55% 45%;
+    --primary-foreground: 200 25% 8%;
+
+    --secondary: 200 20% 18%;
+    --secondary-foreground: 145 55% 70%;
+
+    --muted: 200 20% 18%;
+    --muted-foreground: 150 10% 60%;
+
+    --accent: 38 95% 55%;
+    --accent-foreground: 38 100% 10%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 20% 20%;
+    --input: 200 20% 20%;
+    --ring: 145 55% 45%;
+
+    --pitch: 42 25% 30%;
+    --pitch-dark: 42 20% 20%;
+    --stumps: 30 40% 30%;
+    --scoreboard: 200 30% 8%;
+    --scoreboard-text: 48 100% 60%;
+
+    --gradient-pitch: linear-gradient(135deg, hsl(145 55% 35%) 0%, hsl(145 50% 45%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(200 25% 5%) 0%, hsl(145 40% 15%) 50%, hsl(200 25% 8%) 100%);
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight;
+  }
+}
+
+@layer components {
+  .score-text {
+    font-family: 'Roboto Mono', monospace;
+    @apply font-bold tracking-wider;
+  }
+
+  .live-pulse {
+    animation: pulse-live 2s ease-in-out infinite;
+  }
+
+  .ball-bounce {
+    animation: bounce-ball 0.6s ease-out;
+  }
+
+  .wicket-shake {
+    animation: shake-wicket 0.5s ease-in-out;
+  }
+
+  .score-update {
+    animation: flash-score 0.4s ease-out;
+  }
+
+  .gradient-pitch {
+    background: var(--gradient-pitch);
+  }
+
+  .gradient-gold {
+    background: var(--gradient-gold);
+  }
+
+  .gradient-scoreboard {
+    background: var(--gradient-scoreboard);
+  }
+
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-gold {
+    box-shadow: var(--shadow-gold);
+  }
+
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-md border border-border/50;
+  }
+}
+
+@layer utilities {
+  @keyframes pulse-live {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.1); }
+  }
+
+  @keyframes bounce-ball {
+    0% { transform: translateY(-100%) scale(0.8); opacity: 0; }
+    50% { transform: translateY(10%) scale(1.05); }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+
+  @keyframes shake-wicket {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    20% { transform: translateX(-5px) rotate(-2deg); }
+    40% { transform: translateX(5px) rotate(2deg); }
+    60% { transform: translateX(-3px) rotate(-1deg); }
+    80% { transform: translateX(3px) rotate(1deg); }
+  }
+
+  @keyframes flash-score {
+    0% { background-color: hsl(var(--accent) / 0.3); transform: scale(1.05); }
+    100% { background-color: transparent; transform: scale(1); }
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

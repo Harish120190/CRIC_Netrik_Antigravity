@@ -1,0 +1,19 @@
+{
+  "name": "Cric Netrik",
+  "short_name": "CricNetrik",
+  "description": "Your complete cricket companion for live scoring, team management, and tournaments",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7f5",
+  "theme_color": "#1B7340",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["sports", "utilities"],
+  "lang": "en"
+}
