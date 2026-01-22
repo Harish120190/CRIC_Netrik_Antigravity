@@ -598,6 +598,19 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, matchData
       result,
       winner,
     };
+
+    // SAVE COMPLETED STATUS TO MOCK DB
+    if (matchId) {
+      mockDB.updateMatch(matchId, {
+        status: 'completed',
+        result: result,
+        winner_name: winner
+      });
+    }
+
+    setMatchSummary(summary);
+    setEndMatchOpen(false);
+    setShowConfetti(true);
     onEndMatch(summary);
   };
 
