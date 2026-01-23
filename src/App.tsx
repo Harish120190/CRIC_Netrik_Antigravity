@@ -25,6 +25,10 @@ import ProfilePage from "./pages/ProfilePage";
 import ScheduleMatchPage from "./pages/ScheduleMatchPage";
 import MatchLobbyPage from "./pages/MatchLobbyPage";
 import LookingPage from "./pages/LookingPage";
+import OrganizerDashboard from "./pages/organizer/OrganizerDashboard";
+import CreateTournamentPageOrg from "./pages/organizer/CreateTournamentPage";
+import GroundsPage from "./pages/organizer/GroundsPage";
+import AddGroundPage from "./pages/organizer/AddGroundPage";
 
 const queryClient = new QueryClient();
 
@@ -64,7 +68,10 @@ function AppRoutes() {
         <Route path="/schedule-match" element={<ScheduleMatchPage />} />
         <Route path="/match/:matchId" element={<MatchLobbyPage />} />
         <Route path="/looking" element={<LookingPage />} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="/organizer" element={<OrganizerDashboard />} />
+        <Route path="/organizer/create-tournament" element={<CreateTournamentPageOrg />} />
+        <Route path="/organizer/grounds" element={<GroundsPage />} />
+        <Route path="/organizer/grounds/add" element={<AddGroundPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>

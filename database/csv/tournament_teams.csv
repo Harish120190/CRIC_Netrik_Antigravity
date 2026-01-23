@@ -1,0 +1,5 @@
+group_name,status,joined_at
+"A","approved","2024-02-01T10:00:00Z"
+"A","approved","2024-02-01T10:00:00Z"
+"B","approved","2024-02-02T14:30:00Z"
+"B","pending","2024-02-03T09:15:00Z"

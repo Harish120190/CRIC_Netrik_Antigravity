@@ -27,10 +27,19 @@ const STEPS = [
     { id: 'review', title: 'Review', icon: Save },
 ];
 
+import { useTeamManagement } from '@/hooks/useTeamManagement';
+import { useAuth } from '@/contexts/AuthContext';
+
+// ... imports
+
 export default function ScheduleMatchPage() {
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(0);
     const [loading, setLoading] = useState(false);
+
+    // Auth & Team Management
+    const { user } = useAuth();
+    const { getTeams, loading: teamsLoading } = useTeamManagement();
 
     // Form State
     const [matchData, setMatchData] = useState({
@@ -50,11 +59,23 @@ export default function ScheduleMatchPage() {
         toss_delayed: false
     });
 
-    const [teams, setTeams] = useState(mockDB.getTeams());
+    const [teams, setTeams] = useState<any[]>(mockDB.getTeams());
 
-    // We don't need useQuery for mock data, just load it once or rely on state if we had async
-    // In a real app with local storage, this might be a useEffect, but getTeams is sync here.
-    const isLoadingTeams = false;
+    // Fetch Teams on Mount
+    React.useEffect(() => {
+        const fetchTeams = async () => {
+            if (user) {
+                const myTeams = await getTeams(user.id);
+                // Merge with mock teams, ensuring no duplicates if IDs clash (unlikely given UUIDs vs '1','2')
+                const mockTeams = mockDB.getTeams();
+                // Prefer real teams
+                setTeams([...myTeams, ...mockTeams]);
+            }
+        };
+        fetchTeams();
+    }, [user, getTeams]);
+
+    const isLoadingTeams = teamsLoading;
 
     // Helper to update fields
     const updateField = (field: keyof typeof matchData, value: any) => {
@@ -165,7 +186,9 @@ export default function ScheduleMatchPage() {
                                 value={matchData.team1_id || 'custom_team'}
                                 onValueChange={(v) => selectTeam('team1', v)}
                             >
-                                <SelectTrigger><SelectValue placeholder="Select Registered Team" /></SelectTrigger>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={isLoadingTeams ? "Loading teams..." : "Select Registered Team"} />
+                                </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="custom_team">Custom Team (Enter Below)</SelectItem>
                                     {teams?.map(t => (
@@ -191,7 +214,9 @@ export default function ScheduleMatchPage() {
                                 value={matchData.team2_id || 'custom_team'}
                                 onValueChange={(v) => selectTeam('team2', v)}
                             >
-                                <SelectTrigger><SelectValue placeholder="Select Registered Team" /></SelectTrigger>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={isLoadingTeams ? "Loading teams..." : "Select Registered Team"} />
+                                </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="custom_team">Custom Team (Enter Below)</SelectItem>
                                     {teams?.map(t => (

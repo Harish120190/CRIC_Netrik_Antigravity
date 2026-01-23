@@ -6,119 +6,131 @@
 
 @layer base {
   :root {
-    /* Cricket-themed colors - Emerald greens like a cricket pitch */
-    --background: 150 20% 97%;
-    --foreground: 160 30% 10%;
+    /* Professional Theme: Deep Emerald & Slate */
 
+    /* Backgrounds: Subtle, premium off-whites */
+    --background: 210 20% 98%;
+    /* Very light blue-grey, not stark white */
+    --foreground: 222 47% 11%;
+    /* Deep slate for text */
+
+    /* Card Surfaces: Pure white with subtle depth */
     --card: 0 0% 100%;
-    --card-foreground: 160 30% 10%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 160 30% 10%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Primary: Cricket field green */
-    --primary: 145 63% 32%;
+    /* Primary: Deep Emerald - Sophisticated & Trustworthy */
+    /* HSL: 158 52% 38% - A richer, deeper green */
+    --primary: 158 52% 38%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Lighter green */
-    --secondary: 145 45% 92%;
-    --secondary-foreground: 145 63% 25%;
+    /* Secondary: Slate Blue - Professional accent */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11.2%;
 
-    --muted: 150 15% 92%;
-    --muted-foreground: 150 10% 45%;
+    /* Muted: Subtle backgrounds for separators/secondary text */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
-    /* Accent: Golden amber for highlights */
-    --accent: 38 95% 55%;
-    --accent-foreground: 38 100% 15%;
+    /* Accent: Premium Gold/Amber for highlights (Cricket ball colors/Trophies) */
+    --accent: 38 92% 50%;
+    /* Richer gold */
+    --accent-foreground: 38 92% 10%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 150 15% 88%;
-    --input: 150 15% 88%;
-    --ring: 145 63% 32%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 158 52% 38%;
 
     --radius: 0.75rem;
+    /* Modern rounded corners */
 
-    /* Custom cricket colors */
-    --pitch: 42 35% 75%;
-    --pitch-dark: 42 30% 45%;
-    --stumps: 30 60% 40%;
-    --ball-red: 0 75% 50%;
+    /* Custom Cricket Specific Colors */
+    --pitch: 45 25% 65%;
+    /* Natural dry grass/pitch color */
+    --pitch-dark: 45 20% 40%;
+    --stumps: 25 50% 45%;
+    --ball-red: 355 85% 55%;
+    /* Rich cherry red */
     --ball-white: 0 0% 98%;
-    --scoreboard: 200 25% 15%;
-    --scoreboard-text: 48 100% 55%;
-    --live: 0 85% 55%;
-    --win: 145 70% 40%;
-    --loss: 0 70% 55%;
 
-    /* Gradients */
-    --gradient-pitch: linear-gradient(135deg, hsl(145 63% 32%) 0%, hsl(145 55% 42%) 100%);
-    --gradient-gold: linear-gradient(135deg, hsl(38 95% 55%) 0%, hsl(45 100% 60%) 100%);
-    --gradient-scoreboard: linear-gradient(180deg, hsl(200 25% 12%) 0%, hsl(200 30% 18%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(145 63% 28%) 0%, hsl(145 55% 38%) 50%, hsl(150 20% 97%) 100%);
+    /* Functional Status Colors */
+    --live: 0 85% 60%;
+    --win: 142 70% 45%;
+    --loss: 0 70% 60%;
 
-    /* Shadows */
-    --shadow-card: 0 4px 20px -4px hsl(145 40% 20% / 0.12);
-    --shadow-elevated: 0 12px 40px -8px hsl(145 40% 20% / 0.2);
-    --shadow-glow: 0 0 30px hsl(145 63% 32% / 0.3);
-    --shadow-gold: 0 4px 20px hsl(38 95% 55% / 0.3);
+    /* Gradients: Modern & Subtle */
+    --gradient-pitch: linear-gradient(135deg, hsl(158 52% 38%) 0%, hsl(160 50% 30%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(38 92% 50%) 0%, hsl(45 95% 55%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(158 52% 32%) 0%, hsl(210 30% 20%) 100%);
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Shadows: Soft & layered for depth (Glass/Modern UI) */
+    --shadow-card: 0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 4px 16px -4px rgba(0, 0, 0, 0.08);
+    --shadow-elevated: 0 10px 30px -10px rgba(0, 0, 0, 0.12);
+    --shadow-glow: 0 0 20px hsl(158 52% 38% / 0.2);
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
     --sidebar-primary: 240 5.9% 10%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
+    --sidebar-accent: 210 40% 96.1%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214.3 31.8% 91.4%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 200 25% 8%;
-    --foreground: 150 15% 95%;
+    /* Dark Mode: Deep Blue-Grey (Slate 950 base) */
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
 
-    --card: 200 25% 12%;
-    --card-foreground: 150 15% 95%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 200 25% 12%;
-    --popover-foreground: 150 15% 95%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 145 55% 45%;
-    --primary-foreground: 200 25% 8%;
+    /* Primary: Slightly brighter emerald for dark mode visibility */
+    --primary: 158 52% 45%;
+    --primary-foreground: 222 47% 11%;
 
-    --secondary: 200 20% 18%;
-    --secondary-foreground: 145 55% 70%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 200 20% 18%;
-    --muted-foreground: 150 10% 60%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 38 95% 55%;
-    --accent-foreground: 38 100% 10%;
+    --accent: 38 92% 50%;
+    --accent-foreground: 222 47% 11%;
 
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 200 20% 20%;
-    --input: 200 20% 20%;
-    --ring: 145 55% 45%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 158 52% 45%;
 
-    --pitch: 42 25% 30%;
-    --pitch-dark: 42 20% 20%;
-    --stumps: 30 40% 30%;
-    --scoreboard: 200 30% 8%;
-    --scoreboard-text: 48 100% 60%;
+    --pitch: 42 20% 30%;
+    --pitch-dark: 42 15% 20%;
 
-    --gradient-pitch: linear-gradient(135deg, hsl(145 55% 35%) 0%, hsl(145 50% 45%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(200 25% 5%) 0%, hsl(145 40% 15%) 50%, hsl(200 25% 8%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(222 47% 8%) 0%, hsl(222 47% 11%) 100%);
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
+    /* Shadows for dark mode */
+    --shadow-card: 0 4px 20px -4px rgba(0, 0, 0, 0.4);
+    --shadow-elevated: 0 10px 40px -10px rgba(0, 0, 0, 0.6);
+
+    --sidebar-background: 222 47% 10%;
+    --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
@@ -130,10 +142,18 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Inter', 'Poppins', sans-serif;
+    /* Prefer Inter for UI, fall back to Poppins */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-bold tracking-tight;
   }
 }
@@ -199,27 +219,69 @@
 
 @layer utilities {
   @keyframes pulse-live {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.6; transform: scale(1.1); }
+
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.6;
+      transform: scale(1.1);
+    }
   }
 
   @keyframes bounce-ball {
-    0% { transform: translateY(-100%) scale(0.8); opacity: 0; }
-    50% { transform: translateY(10%) scale(1.05); }
-    100% { transform: translateY(0) scale(1); opacity: 1; }
+    0% {
+      transform: translateY(-100%) scale(0.8);
+      opacity: 0;
+    }
+
+    50% {
+      transform: translateY(10%) scale(1.05);
+    }
+
+    100% {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
   }
 
   @keyframes shake-wicket {
-    0%, 100% { transform: translateX(0) rotate(0deg); }
-    20% { transform: translateX(-5px) rotate(-2deg); }
-    40% { transform: translateX(5px) rotate(2deg); }
-    60% { transform: translateX(-3px) rotate(-1deg); }
-    80% { transform: translateX(3px) rotate(1deg); }
+
+    0%,
+    100% {
+      transform: translateX(0) rotate(0deg);
+    }
+
+    20% {
+      transform: translateX(-5px) rotate(-2deg);
+    }
+
+    40% {
+      transform: translateX(5px) rotate(2deg);
+    }
+
+    60% {
+      transform: translateX(-3px) rotate(-1deg);
+    }
+
+    80% {
+      transform: translateX(3px) rotate(1deg);
+    }
   }
 
   @keyframes flash-score {
-    0% { background-color: hsl(var(--accent) / 0.3); transform: scale(1.05); }
-    100% { background-color: transparent; transform: scale(1); }
+    0% {
+      background-color: hsl(var(--accent) / 0.3);
+      transform: scale(1.05);
+    }
+
+    100% {
+      background-color: transparent;
+      transform: scale(1);
+    }
   }
 
   .hide-scrollbar::-webkit-scrollbar {

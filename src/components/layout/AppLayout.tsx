@@ -86,18 +86,18 @@ export function AppLayout({ children, showSidebar = true }: AppLayoutProps) {
   const SidebarContent = () => (
     <>
       {/* Header with Logo */}
-      <div className="p-4 border-b border-border">
+      <div className="h-20 flex items-center px-6 border-b border-border/40">
         <div className={cn(
-          "flex items-center gap-3",
-          collapsed && "justify-center"
+          "flex items-center gap-4 w-full",
+          collapsed && "justify-center px-0"
         )}>
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/20 flex items-center justify-center shrink-0">
             <Trophy className="w-5 h-5 text-primary-foreground" />
           </div>
           {!collapsed && (
-            <div className="flex flex-col">
-              <span className="font-bold text-lg text-foreground">CricNest</span>
-              <span className="text-xs text-muted-foreground">Cricket Scoring</span>
+            <div className="flex flex-col animate-in fade-in slide-in-from-left-4 duration-500">
+              <span className="font-bold text-xl tracking-tight text-foreground">CricNest</span>
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Pro Scorer</span>
             </div>
           )}
         </div>
@@ -116,14 +116,20 @@ export function AppLayout({ children, showSidebar = true }: AppLayoutProps) {
               key={item.title}
               onClick={() => handleNavClick(item.url)}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left",
-                "hover:bg-muted/50",
-                collapsed && "justify-center px-2",
-                isActive(item.url) && "bg-primary/10 text-primary font-medium"
+                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left group relative overflow-hidden",
+                "hover:bg-primary/5 hover:text-primary",
+                collapsed && "justify-center px-3",
+                isActive(item.url)
+                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary hover:text-primary-foreground"
+                  : "text-muted-foreground"
               )}
             >
-              <item.icon className={cn("w-5 h-5 shrink-0", isActive(item.url) && "text-primary")} />
-              {!collapsed && <span>{item.title}</span>}
+              <item.icon className={cn("w-5 h-5 shrink-0 transition-colors", isActive(item.url) ? "text-primary-foreground" : "group-hover:text-primary")} />
+              {!collapsed && <span className="font-medium">{item.title}</span>}
+
+              {isActive(item.url) && !collapsed && (
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white/20 rounded-l-full" />
+              )}
             </button>
           ))}
 
@@ -240,20 +246,20 @@ export function AppLayout({ children, showSidebar = true }: AppLayoutProps) {
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "hidden lg:flex flex-col border-r border-border bg-card transition-all duration-300 shrink-0 relative",
-          collapsed ? "w-16" : "w-64"
+          "hidden lg:flex flex-col border-r border-border/40 bg-card/50 backdrop-blur-xl transition-all duration-500 ease-in-out shrink-0 relative z-20 shadow-xl",
+          collapsed ? "w-20" : "w-72"
         )}
       >
         <SidebarContent />
         {/* Collapse button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute bottom-20 -right-3 w-6 h-6 rounded-full bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors z-10"
+          className="absolute bottom-8 -right-3 w-8 h-8 rounded-full bg-background border border-border shadow-md flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-all duration-300 z-50 group"
         >
           {collapsed ? (
-            <ChevronRight className="w-3 h-3" />
+            <ChevronRight className="w-4 h-4 group-hover:scale-110 transition-transform" />
           ) : (
-            <ChevronLeft className="w-3 h-3" />
+            <ChevronLeft className="w-4 h-4 group-hover:scale-110 transition-transform" />
           )}
         </button>
       </aside>

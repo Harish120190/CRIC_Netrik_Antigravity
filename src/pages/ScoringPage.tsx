@@ -29,6 +29,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import PlayerSelectDialog from '@/components/scoring/PlayerSelectDialog';
 
 interface Ball {
   runs: number;
@@ -123,6 +124,10 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, matchData
   const [currentInnings, setCurrentInnings] = useState<1 | 2>(1);
   const [firstInningsData, setFirstInningsData] = useState<InningsData | null>(null);
 
+  const [matchSummary, setMatchSummary] = useState<MatchSummaryData | null>(null);
+  const [endMatchOpen, setEndMatchOpen] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+
   const [runs, setRuns] = useState(0);
   const [wickets, setWickets] = useState(0);
   const [balls, setBalls] = useState<Ball[]>([]);
@@ -137,8 +142,89 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, matchData
   const [nonStrikerIndex, setNonStrikerIndex] = useState(1);
   const [currentBowlerIndex, setCurrentBowlerIndex] = useState(0);
 
+  // Selection Dialog State
+  const [showBatsmanSelect, setShowBatsmanSelect] = useState(false);
+  const [showBowlerSelect, setShowBowlerSelect] = useState(false);
+
   const [batsmenStats, setBatsmenStats] = useState<BatsmanStats[]>(createInitialBatsmenStats());
   const [bowlersStats, setBowlersStats] = useState<BowlerStats[]>(createInitialBowlersStats());
+
+  // Handle manual batsman selection (New Batsman)
+  const handleBatsmanSelect = (playerId: string) => {
+    const newBatsmanIndex = batsmenStats.findIndex(b => b.id === playerId);
+    if (newBatsmanIndex !== -1) {
+      // Start new partnership with the NEW batsman
+      // Note: currenPartnership was closed in handleWicket. We need to create a new one here.
+      const newWicketNo = wickets; // Wickets already incremented in handleWicket
+
+      setCurrentPartnership({
+        id: (previousPartnerships.length || 0) + 2, // simple increment
+        batsman1Name: batsmenStats[nonStrikerIndex].name,
+        batsman2Name: batsmenStats[newBatsmanIndex].name,
+        runs: 0,
+        balls: 0,
+        isActive: true,
+        wicketNumber: newWicketNo + 1,
+      });
+
+      setStrikerIndex(newBatsmanIndex);
+      setBatsmenStats(prev => prev.map((b, i) => ({
+        ...b,
+        isOnStrike: i === newBatsmanIndex,
+      })));
+      setShowBatsmanSelect(false);
+    }
+  };
+
+  // Handle manual bowler selection (New Bowler)
+  const handleBowlerSelect = (playerId: string) => {
+    const newBowlerIndex = bowlersStats.findIndex(b => b.id === playerId);
+    if (newBowlerIndex !== -1) {
+      setCurrentBowlerIndex(newBowlerIndex);
+      setBowlersStats(prev => prev.map((b, i) => ({
+        ...b,
+        isBowling: i === newBowlerIndex
+      })));
+      setShowBowlerSelect(false);
+    }
+  };
+
+  const handleAddNewBatsman = (name: string, mobile: string) => {
+    const newId = `bat-new-${Date.now()}`;
+    const newBatsman: BatsmanStats = {
+      id: newId,
+      name: name,
+      runs: 0,
+      balls: 0,
+      fours: 0,
+      sixes: 0,
+      isOut: false,
+      isOnStrike: false,
+      // You might want to store mobile somewhere if needed, but BatsmanStats currently doesn't have it. 
+      // For now we just add the name.
+    };
+
+    setBatsmenStats(prev => [...prev, newBatsman]);
+    // Auto-select the newly added player?
+    handleBatsmanSelect(newId);
+  };
+
+  const handleAddNewBowler = (name: string, mobile: string) => {
+    const newId = `bowl-new-${Date.now()}`;
+    const newBowler: BowlerStats = {
+      id: newId,
+      name: name,
+      overs: 0,
+      balls: 0,
+      maidens: 0,
+      runs: 0,
+      wickets: 0,
+      isBowling: false
+    };
+
+    setBowlersStats(prev => [...prev, newBowler]);
+    handleBowlerSelect(newId);
+  };
 
   // Partnership tracking
   const [currentPartnership, setCurrentPartnership] = useState<Partnership>({
@@ -389,6 +475,7 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, matchData
         setCurrentOver(currentOver + 1);
         setCurrentBall(0);
         rotateStrike(); // End of over, rotate strike
+        setShowBowlerSelect(true); // Trigger bowler selection
       } else {
         setCurrentBall(newBallCount);
         // Rotate strike on odd runs
@@ -432,21 +519,14 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, matchData
     // Save current partnership and start new one
     setPreviousPartnerships(prev => [...prev, { ...currentPartnership, isActive: false }]);
 
-    // Find the next batsman
-    const nextBatsman = batsmenStats.findIndex((b, i) => !b.isOut && i !== strikerIndex && i !== nonStrikerIndex);
+    //   // Find the next batsman (REMOVED AUTO SELECTION)
+    //   const nextBatsman = batsmenStats.findIndex((b, i) => !b.isOut && i !== strikerIndex && i !== nonStrikerIndex);
 
-    if (nextBatsman !== -1) {
-      // Start new partnership
-      setCurrentPartnership({
-        id: currentPartnership.id + 1,
-        batsman1Name: batsmenStats[nonStrikerIndex].name,
-        batsman2Name: sampleBatsmen[nextBatsman],
-        runs: 0,
-        balls: 0,
-        isActive: true,
-        wicketNumber: newWicketCount + 1,
-      });
-    }
+    //   if (nextBatsman !== -1) {
+    //      // Logic moved to handleBatsmanSelect
+    //   }
+
+    setShowBatsmanSelect(true); // Trigger new batsman selection
 
     // Mark batsman as out
     setBatsmenStats(prev => prev.map((b, i) => {
@@ -471,14 +551,14 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, matchData
       return b;
     }));
 
-    // Bring in next batsman
-    if (nextBatsman !== -1) {
-      setStrikerIndex(nextBatsman);
-      setBatsmenStats(prev => prev.map((b, i) => ({
-        ...b,
-        isOnStrike: i === nextBatsman,
-      })));
-    }
+    // Bring in next batsman (REMOVED AUTO SELECTION)
+    // if (nextBatsman !== -1) {
+    //   setStrikerIndex(nextBatsman);
+    //   setBatsmenStats(prev => prev.map((b, i) => ({
+    //     ...b,
+    //     isOnStrike: i === nextBatsman,
+    //   })));
+    // }
 
     const newBallCount = currentBall + 1;
     if (newBallCount >= 6) {
@@ -551,6 +631,8 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, matchData
     setCurrentBowlerIndex(0);
     setBatsmenStats(createInitialBatsmenStats());
     setBowlersStats(createInitialBowlersStats());
+    setShowBatsmanSelect(false);
+    setShowBowlerSelect(false);
 
     // Reset partnerships for second innings
     setCurrentPartnership({
@@ -604,7 +686,7 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, matchData
       mockDB.updateMatch(matchId, {
         status: 'completed',
         result: result,
-        winner_name: winner
+        winner_name: winner?.name
       });
     }
 
@@ -621,6 +703,7 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, matchData
     runs: b.runs,
     isWicket: b.isWicket,
     extras: b.extras,
+    overNumber: b.overNumber,
   }));
 
   // Calculate over-by-over data for run progression chart
@@ -732,8 +815,10 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, matchData
         <div className="bg-card rounded-xl p-3 border border-border">
           <div className="flex items-start justify-between text-sm gap-4">
             {/* Batsman Stats */}
-            <div className="flex-1">
-              <p className="text-xs text-muted-foreground mb-1">On Strike</p>
+            <div className="flex-1 cursor-pointer hover:bg-muted/50 p-1 rounded transition-colors" onClick={() => setShowBatsmanSelect(true)}>
+              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                On Strike <RotateCcw className="w-3 h-3 text-primary" />
+              </p>
               <div className="flex flex-col gap-1">
                 <p className="font-semibold text-foreground flex items-center justify-between">
                   <span>{batsmenStats[strikerIndex]?.name}</span>
@@ -751,8 +836,10 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, matchData
             <div className="w-px h-10 bg-border self-center" />
 
             {/* Bowler Stats */}
-            <div className="flex-1 text-right">
-              <p className="text-xs text-muted-foreground mb-1">Bowler</p>
+            <div className="flex-1 text-right cursor-pointer hover:bg-muted/50 p-1 rounded transition-colors" onClick={() => setShowBowlerSelect(true)}>
+              <p className="text-xs text-muted-foreground mb-1 flex items-center justify-end gap-1">
+                <RotateCcw className="w-3 h-3 text-primary" /> Bowler
+              </p>
               <div className="flex flex-col gap-1">
                 <p className="font-semibold text-foreground flex items-center justify-end gap-2">
                   <span className="text-xs text-live font-bold">
@@ -796,6 +883,30 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, matchData
           onScore={handleScore}
           onWicket={handleWicket}
           onUndo={handleUndo}
+        />
+
+        {/* Selection Dialogs */}
+        <PlayerSelectDialog
+          open={showBatsmanSelect}
+          onOpenChange={setShowBatsmanSelect}
+          title="Select Next Batsman"
+          players={batsmenStats
+            .filter((b, i) => !b.isOut && i !== strikerIndex && i !== nonStrikerIndex)
+            .map(b => ({ id: b.id, name: b.name }))}
+          onSelect={handleBatsmanSelect}
+          onAddNew={handleAddNewBatsman}
+        />
+
+        <PlayerSelectDialog
+          open={showBowlerSelect}
+          onOpenChange={setShowBowlerSelect}
+          title="Select Next Bowler"
+          description="Who is bowling the next over?"
+          players={bowlersStats
+            .filter((b, i) => i !== currentBowlerIndex) // Can't bowl continuous overs usually
+            .map(b => ({ id: b.id, name: b.name }))}
+          onSelect={handleBowlerSelect}
+          onAddNew={handleAddNewBowler}
         />
 
         {/* End Innings / End Match Buttons */}
