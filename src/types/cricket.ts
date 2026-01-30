@@ -19,10 +19,17 @@ export interface Team {
   id: string;
   name: string;
   logo?: string;
+  jersey?: string;
+  themeColor?: string;
+  secondaryColor?: string;
   location?: string;
-  captainId: string;
-  players: string[];
-  createdAt: Date;
+  captainId?: string;
+  players?: string[]; // Made optional for mock data compatibility
+  createdAt?: Date; // Made optional for mock data compatibility
+  // Team Management Fields
+  team_code?: string;
+  qr_code_url?: string;
+  created_by?: string;
 }
 
 export interface Match {
@@ -38,6 +45,11 @@ export interface Match {
   tossDecision?: 'bat' | 'bowl';
   innings: Innings[];
   tournamentId?: string;
+  scorers?: string[];
+  umpires?: string[];
+  roundName?: string;
+  groupName?: string;
+  matchOrder?: number;
 }
 
 export interface Innings {
@@ -58,6 +70,8 @@ export interface Ball {
   batsmanId: string;
   bowlerId: string;
   extras?: Partial<Extras>;
+  version?: number;
+  history?: any[];
 }
 
 export interface Extras {
@@ -93,4 +107,22 @@ export interface PlayerStats {
   average: number;
   strikeRate: number;
   economy?: number;
+}
+
+export interface Challenge {
+  id: string;
+  senderTeamId: string;
+  receiverTeamId: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'rescheduled';
+  matchDetails: {
+    date: Date;
+    time?: string;
+    venue: string;
+    format: 'T20' | 'ODI' | 'T10' | 'Custom';
+    ballType: 'tennis' | 'leather' | 'box' | 'stitch';
+    overs: number;
+  };
+  createdAt: Date;
+  notes?: string;
+  responseNote?: string;
 }

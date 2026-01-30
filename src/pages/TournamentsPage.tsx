@@ -63,10 +63,10 @@ const TournamentsPage: React.FC<TournamentsPageProps> = ({ onNavigate }) => {
 
   const TournamentCard: React.FC<{ tournament: Tournament }> = ({ tournament }) => (
     <button
-      onClick={() => onNavigate(`/tournament/${tournament.id}`)}
-      className="w-full bg-card rounded-xl overflow-hidden shadow-card hover:shadow-elevated transition-all duration-200 text-left"
+      onClick={() => onNavigate(`/tournaments/${tournament.id}`)}
+      className="w-full bg-card rounded-2xl overflow-hidden shadow-card hover:shadow-elevated transition-all duration-300 text-left border border-border/50 group"
     >
-      <div className="gradient-pitch p-4">
+      <div className="bg-gradient-primary p-5">
         <div className="flex items-start justify-between">
           <div>
             <span className={cn(

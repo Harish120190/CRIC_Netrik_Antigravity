@@ -32,7 +32,7 @@ const TournamentDetailsPage: React.FC = () => {
   useEffect(() => {
     const fetchDetails = async () => {
       if (!tournamentId) return;
-      
+
       try {
         const data = await getTournamentDetails(tournamentId);
         setTournament({
@@ -80,7 +80,7 @@ const TournamentDetailsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <div className="gradient-pitch">
+      <div className="bg-gradient-primary shadow-lg">
         <div className="flex items-center px-4 py-3">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-primary-foreground/80">
             <ArrowLeft className="w-5 h-5" />
@@ -166,7 +166,7 @@ const TournamentDetailsPage: React.FC = () => {
             {isOrganizer && <TabsTrigger value="registrations">Requests</TabsTrigger>}
             {isOrganizer && <TabsTrigger value="invites">Invites</TabsTrigger>}
           </TabsList>
-          
+
           <TabsContent value="points" className="mt-4">
             <TournamentPointsTable teams={teams} />
           </TabsContent>
@@ -174,10 +174,10 @@ const TournamentDetailsPage: React.FC = () => {
           <TabsContent value="bracket" className="mt-4">
             <TournamentBracket tournamentId={tournamentId!} />
           </TabsContent>
-          
+
           <TabsContent value="matches" className="mt-4">
-            <TournamentMatches 
-              tournamentId={tournamentId!} 
+            <TournamentMatches
+              tournamentId={tournamentId!}
               teams={teams}
               isOrganizer={user?.id === tournament.organizer_id}
               defaultVenue={tournament.venue || ''}
@@ -185,7 +185,7 @@ const TournamentDetailsPage: React.FC = () => {
               format={tournament.format}
             />
           </TabsContent>
-          
+
           <TabsContent value="teams" className="mt-4">
             <TournamentTeamsList teams={teams} />
           </TabsContent>

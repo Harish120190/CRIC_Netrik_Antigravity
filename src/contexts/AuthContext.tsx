@@ -1,173 +1,118 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-
-interface Profile {
-  id: string;
-  full_name: string;
-  mobile_number: string | null;
-  mobile_verified: boolean;
-  avatar_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { mockDB, User } from '@/services/mockDatabase';
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
-  profile: Profile | null;
-  loading: boolean;
-  signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signInWithPhone: (phone: string) => Promise<{ error: Error | null }>;
-  verifyOtp: (phone: string, token: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
-  updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
-  refreshProfile: () => Promise<void>;
+  isAuthenticated: boolean;
+  loginWithPhone: (mobile: string) => Promise<boolean>;
+  loginWithEmail: (email: string, password: string) => Promise<boolean>;
+  signup: (userData: any) => Promise<User>;
+  logout: () => void;
+  isLoading: boolean;
+  updateProfile: (updates: Partial<User>) => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (error) {
-      console.error('Error fetching profile:', error);
-      return null;
-    }
-    return data as Profile;
-  };
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Defer profile fetch to avoid deadlock
-        if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id).then(setProfile);
-          }, 0);
-        } else {
-          setProfile(null);
+    const checkAuth = async () => {
+      try {
+        const storedUser = localStorage.getItem('cric_hub_user');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
         }
-        setLoading(false);
+      } catch (error) {
+        console.error('Error checking auth state:', error);
+      } finally {
+        setIsLoading(false);
       }
-    );
+    };
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id).then(setProfile);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    checkAuth();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      phone: phone || undefined,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
-    
-    return { error: error as Error | null };
-  };
-
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    return { error: error as Error | null };
-  };
-
-  const signInWithPhone = async (phone: string) => {
-    const { error } = await supabase.auth.signInWithOtp({
-      phone,
-    });
-    
-    return { error: error as Error | null };
-  };
-
-  const verifyOtp = async (phone: string, token: string) => {
-    const { error } = await supabase.auth.verifyOtp({
-      phone,
-      token,
-      type: 'sms',
-    });
-    
-    return { error: error as Error | null };
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-    setProfile(null);
-  };
-
-  const updateProfile = async (updates: Partial<Profile>) => {
-    if (!user) return { error: new Error('Not authenticated') };
-
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id);
-
-    if (!error) {
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
+  const loginWithPhone = async (mobile: string): Promise<boolean> => {
+    try {
+      const dbUser = mockDB.getUserByMobile(mobile);
+      if (dbUser) {
+        setUser(dbUser);
+        localStorage.setItem('cric_hub_user', JSON.stringify(dbUser));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-
-    return { error: error as Error | null };
   };
 
-  const refreshProfile = async () => {
-    if (user) {
-      const profile = await fetchProfile(user.id);
-      setProfile(profile);
+  const loginWithEmail = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const users = mockDB.getUsers();
+      const dbUser = users.find(u => u.email === email && u.password === password);
+      if (dbUser) {
+        setUser(dbUser as User);
+        localStorage.setItem('cric_hub_user', JSON.stringify(dbUser));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Email login error:', error);
+      return false;
+    }
+  };
+
+  const signup = async (userData: any): Promise<User> => {
+    try {
+      const newUser = mockDB.createUser(userData);
+      setUser(newUser as User);
+      localStorage.setItem('cric_hub_user', JSON.stringify(newUser));
+      return newUser as User;
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('cric_hub_user');
+  };
+
+  const updateProfile = async (updates: Partial<User>): Promise<User | null> => {
+    if (!user) return null;
+    try {
+      const updatedUser = mockDB.updateUser(user.id, updates);
+      if (updatedUser) {
+        const fullUpdatedUser = updatedUser as User;
+        setUser(fullUpdatedUser);
+        localStorage.setItem('cric_hub_user', JSON.stringify(fullUpdatedUser));
+        return fullUpdatedUser;
+      }
+      return null;
+    } catch (error) {
+      console.error('Profile update error:', error);
+      return null;
     }
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      session,
-      profile,
-      loading,
-      signUp,
-      signIn,
-      signInWithPhone,
-      verifyOtp,
-      signOut,
-      updateProfile,
-      refreshProfile,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        loginWithPhone,
+        loginWithEmail,
+        signup,
+        logout,
+        isLoading,
+        updateProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

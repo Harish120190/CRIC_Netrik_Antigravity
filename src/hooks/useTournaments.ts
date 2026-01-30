@@ -1,25 +1,8 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { mockDB, Tournament as PersistedTournament } from '@/services/mockDatabase';
 
-export interface Tournament {
-  id: string;
-  name: string;
-  format: string;
-  overs: number;
-  status: 'upcoming' | 'ongoing' | 'completed';
-  start_date: string;
-  end_date: string | null;
-  venue: string | null;
-  organizer_id: string | null;
-  banner_url: string | null;
-  rules: string | null;
-  max_teams: number;
-  entry_fee: number;
-  prize_pool: string | null;
-  created_at: string;
-  teams_count?: number;
-}
+export type { PersistedTournament as Tournament };
 
 export interface TournamentTeam {
   id: string;
@@ -42,7 +25,7 @@ export interface TournamentTeam {
 }
 
 export function useTournaments() {
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [tournaments, setTournaments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
@@ -50,27 +33,18 @@ export function useTournaments() {
   const fetchTournaments = async () => {
     setIsLoading(true);
     try {
-      const { data, error: fetchError } = await supabase
-        .from('tournaments')
-        .select('*')
-        .order('start_date', { ascending: false });
+      const data = mockDB.getTournaments();
 
-      if (fetchError) throw fetchError;
-
-      // Get team counts for each tournament
-      const tournamentsWithCounts = await Promise.all(
-        (data || []).map(async (tournament: any) => {
-          const { count } = await supabase
-            .from('tournament_teams')
-            .select('*', { count: 'exact', head: true })
-            .eq('tournament_id', tournament.id);
-
-          return {
-            ...tournament,
-            teams_count: count || 0,
-          };
-        })
-      );
+      const tournamentsWithCounts = data.map(tournament => {
+        const teams = mockDB.getTournamentTeams(tournament.id);
+        return {
+          ...tournament,
+          start_date: tournament.startDate,
+          end_date: tournament.endDate,
+          format: tournament.matchFormat + ' Overs',
+          teams_count: teams.length,
+        };
+      });
 
       setTournaments(tournamentsWithCounts);
     } catch (err: any) {
@@ -80,65 +54,50 @@ export function useTournaments() {
     }
   };
 
-  const createTournament = async (tournamentData: Partial<Tournament>) => {
+  const createTournament = async (tournamentData: any) => {
     if (!user) throw new Error('Must be logged in');
 
-    const insertData = {
+    const newTournament = mockDB.createTournament({
       name: tournamentData.name || 'Untitled Tournament',
-      format: tournamentData.format || 'T20',
-      overs: tournamentData.overs || 20,
-      status: tournamentData.status || 'upcoming',
-      start_date: tournamentData.start_date || new Date().toISOString().split('T')[0],
-      end_date: tournamentData.end_date || null,
-      venue: tournamentData.venue || null,
-      organizer_id: user.id,
-      banner_url: tournamentData.banner_url || null,
-      rules: tournamentData.rules || null,
-      max_teams: tournamentData.max_teams || 16,
-      entry_fee: tournamentData.entry_fee || 0,
-      prize_pool: tournamentData.prize_pool || null,
-    };
+      city: tournamentData.city || 'Local',
+      startDate: tournamentData.start_date || new Date().toISOString(),
+      endDate: tournamentData.end_date || new Date().toISOString(),
+      ballType: tournamentData.ballType || 'tennis',
+      matchFormat: tournamentData.overs || 20,
+      matchType: tournamentData.matchType || 'league',
+      orgId: user.id,
+    });
 
-    const { data, error } = await supabase
-      .from('tournaments')
-      .insert(insertData)
-      .select()
-      .single();
-
-    if (error) throw error;
     await fetchTournaments();
-    return data;
+    return newTournament;
   };
 
   const getTournamentDetails = async (tournamentId: string) => {
-    const { data: tournament, error: tournamentError } = await supabase
-      .from('tournaments')
-      .select('*')
-      .eq('id', tournamentId)
-      .single();
+    const tournament = mockDB.getTournament(tournamentId);
+    if (!tournament) throw new Error('Tournament not found');
 
-    if (tournamentError) throw tournamentError;
-
-    const { data: teams, error: teamsError } = await supabase
-      .from('tournament_teams')
-      .select(`
-        *,
-        teams:team_id (
-          id,
-          name,
-          logo_url
-        )
-      `)
-      .eq('tournament_id', tournamentId)
-      .order('points', { ascending: false });
-
-    if (teamsError) throw teamsError;
+    const teams = mockDB.getTournamentTeams(tournamentId);
+    const registeredTeams = mockDB.getTeams();
 
     return {
-      tournament,
-      teams: (teams || []).map((t: any) => ({
+      tournament: {
+        ...tournament,
+        start_date: tournament.startDate,
+        end_date: tournament.endDate,
+      },
+      teams: teams.map(t => ({
         ...t,
-        team: t.teams,
+        tournament_id: t.tournamentId,
+        team_id: t.teamId,
+        group_name: t.group || null,
+        seed: null,
+        matches_played: 0,
+        matches_won: 0,
+        matches_lost: 0,
+        matches_tied: 0,
+        points: 0,
+        net_run_rate: 0,
+        team: registeredTeams.find(rt => rt.id === t.teamId)
       })),
     };
   };

@@ -10,49 +10,58 @@ interface HeroSectionProps {
 
 const HeroSection: React.FC<HeroSectionProps> = ({ onStartMatch, onJoinMatch }) => {
   return (
-    <section className="relative overflow-hidden rounded-2xl gradient-pitch p-6 mb-6">
-      {/* Background decorations */}
-      <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
-        <CricketBall className="w-full h-full" />
-      </div>
-      <div className="absolute bottom-0 left-0 w-24 h-24 opacity-10 rotate-45">
-        <CricketBat className="w-full h-full" />
+    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary/90 to-accent text-white p-8 mb-8 shadow-elevated">
+      {/* Background patterns */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl animate-pulse" />
+      <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/20 rounded-full -ml-16 -mb-16 blur-2xl" />
+
+      {/* Icon Backgrounds */}
+      <div className="absolute top-4 right-8 w-24 h-24 opacity-20">
+        <CricketBall className="w-full h-full animate-bounce" />
       </div>
 
       {/* Content */}
-      <div className="relative z-10 space-y-4">
-        <div>
-          <p className="text-primary-foreground/80 text-sm font-medium mb-1">
-            Ready to play?
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <span className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold uppercase tracking-wider">
+              Live Scoring Platform
+            </span>
+            <h2 className="text-4xl font-extrabold leading-tight tracking-tight">
+              Elevate Your <br />
+              <span className="text-white/80">Cricket Experience</span>
+            </h2>
+          </div>
+
+          <p className="text-white/80 text-lg font-medium leading-relaxed max-w-md">
+            The most advanced ball-by-ball scoring with real-time analytics and professional match reports.
           </p>
-          <h2 className="text-2xl font-bold text-primary-foreground leading-tight">
-            Start Scoring<br />Your Match Now
-          </h2>
+
+          <div className="flex flex-wrap items-center gap-4 pt-4">
+            <Button
+              size="lg"
+              onClick={onStartMatch}
+              className="bg-white text-primary hover:bg-white/90 font-bold rounded-2xl shadow-lg hover:scale-105 transition-all duration-300"
+            >
+              <Play className="fill-current w-4 h-4 mr-2" />
+              Quick Start
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={onJoinMatch}
+              className="border-white/40 text-white hover:bg-white/10 backdrop-blur-sm rounded-2xl transition-all duration-300"
+            >
+              Join Match
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
         </div>
 
-        <p className="text-primary-foreground/70 text-sm max-w-[200px]">
-          Ball-by-ball scoring with live updates and detailed analytics
-        </p>
-
-        <div className="flex items-center gap-3 pt-2">
-          <Button 
-            variant="gold" 
-            size="lg"
-            onClick={onStartMatch}
-            className="gap-2"
-          >
-            <Play className="w-4 h-4" />
-            New Match
-          </Button>
-          <Button 
-            variant="outline" 
-            size="lg"
-            onClick={onJoinMatch}
-            className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-          >
-            Join
-            <ArrowRight className="w-4 h-4" />
-          </Button>
+        <div className="hidden md:flex justify-end items-center">
+          <div className="relative w-64 h-64 bg-white/15 backdrop-blur-xl rounded-[40px] border border-white/20 flex items-center justify-center p-8 shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500">
+            <CricketBat className="w-full h-full text-white/90 drop-shadow-xl" />
+          </div>
         </div>
       </div>
     </section>

@@ -1,16 +1,6 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-
-interface Team {
-  id: string;
-  name: string;
-  logo_url: string | null;
-  team_code: string;
-  qr_code_url: string | null;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-}
+import { mockDB, generateUUID } from '@/services/mockDatabase';
+import { Team } from '@/types/cricket';
 
 interface TeamPlayer {
   id: string;
@@ -37,16 +27,17 @@ interface AddPlayerData {
   role?: 'admin' | 'captain' | 'player';
 }
 
+const STORAGE_KEY_PLAYERS = 'cric_hub_team_players';
+
 export const useTeamManagement = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createTeam = useCallback(async (data: CreateTeamData, userId: string): Promise<Team | null> => {
+  const createTeam = useCallback(async (data: CreateTeamData, userId: string): Promise<any | null> => {
     setLoading(true);
     setError(null);
 
     try {
-      // Generate team code client-side since DB column requires it
       const generateCode = () => {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         let code = '';
@@ -56,54 +47,34 @@ export const useTeamManagement = () => {
         return code;
       };
 
-      // Create the team
-      const { data: team, error: teamError } = await supabase
-        .from('teams')
-        .insert({
-          name: data.name,
-          logo_url: data.logo_url || null,
-          created_by: userId,
-          team_code: generateCode(),
-        })
-        .select()
-        .single();
+      const newTeam = mockDB.createTeam(data.name);
 
-      if (teamError) {
-        console.error('Error creating team:', teamError);
-        setError(teamError.message);
-        return null;
-      }
+      // Mock additional fields
+      const playersJson = localStorage.getItem(STORAGE_KEY_PLAYERS);
+      const players = playersJson ? JSON.parse(playersJson) : [];
 
-      // Add creator as admin player
-      const { error: playerError } = await supabase
-        .from('team_players')
-        .insert({
-          team_id: team.id,
-          user_id: userId,
-          mobile_number: 'creator',
-          player_name: 'Team Admin',
-          role: 'admin',
-          status: 'joined',
-          joined_at: new Date().toISOString(),
-        });
+      const newPlayer: TeamPlayer = {
+        id: generateUUID(),
+        team_id: newTeam.id,
+        user_id: userId,
+        mobile_number: 'creator',
+        player_name: 'Team Admin',
+        role: 'admin',
+        status: 'joined',
+        invited_by: null,
+        joined_at: new Date().toISOString(),
+        created_at: new Date().toISOString()
+      };
 
-      if (playerError) {
-        console.error('Error adding creator as admin:', playerError);
-      }
+      players.push(newPlayer);
+      localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(players));
 
-      // Generate QR code via edge function
-      const { data: session } = await supabase.auth.getSession();
-      if (session?.session?.access_token) {
-        const response = await supabase.functions.invoke('generate-qr', {
-          body: { teamId: team.id, teamCode: team.team_code },
-        });
-
-        if (response.data?.qrCodeUrl) {
-          team.qr_code_url = response.data.qrCodeUrl;
-        }
-      }
-
-      return team as Team;
+      return {
+        ...newTeam,
+        team_code: generateCode(),
+        created_by: userId,
+        created_at: new Date().toISOString()
+      };
     } catch (err) {
       console.error('Error in createTeam:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -113,50 +84,14 @@ export const useTeamManagement = () => {
     }
   }, []);
 
-  const getTeams = useCallback(async (userId: string): Promise<Team[]> => {
+  const getTeams = useCallback(async (userId: string): Promise<any[]> => {
     setLoading(true);
     setError(null);
 
     try {
-      // Get teams where user is creator or member
-      const { data: playerTeams, error: playerError } = await supabase
-        .from('team_players')
-        .select('team_id')
-        .eq('user_id', userId);
-
-      if (playerError) {
-        console.error('Error fetching player teams:', playerError);
-        setError(playerError.message);
-        return [];
-      }
-
-      const teamIds = playerTeams?.map(p => p.team_id) || [];
-
-      const { data: createdTeams, error: createdError } = await supabase
-        .from('teams')
-        .select('*')
-        .eq('created_by', userId);
-
-      if (createdError) {
-        console.error('Error fetching created teams:', createdError);
-      }
-
-      const { data: memberTeams, error: memberError } = await supabase
-        .from('teams')
-        .select('*')
-        .in('id', teamIds);
-
-      if (memberError) {
-        console.error('Error fetching member teams:', memberError);
-      }
-
-      // Merge and dedupe
-      const allTeams = [...(createdTeams || []), ...(memberTeams || [])];
-      const uniqueTeams = allTeams.filter((team, index, self) =>
-        index === self.findIndex(t => t.id === team.id)
-      );
-
-      return uniqueTeams as Team[];
+      const allTeams = mockDB.getTeams();
+      // For mock, return all as we don't strictly filter by user_id yet
+      return allTeams;
     } catch (err) {
       console.error('Error in getTeams:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -166,36 +101,21 @@ export const useTeamManagement = () => {
     }
   }, []);
 
-  const getTeamDetails = useCallback(async (teamId: string): Promise<{ team: Team | null; players: TeamPlayer[] }> => {
+  const getTeamDetails = useCallback(async (teamId: string): Promise<{ team: any | null; players: TeamPlayer[] }> => {
     setLoading(true);
     setError(null);
 
     try {
-      const { data: team, error: teamError } = await supabase
-        .from('teams')
-        .select('*')
-        .eq('id', teamId)
-        .single();
+      const teams = mockDB.getTeams();
+      const team = teams.find(t => t.id === teamId);
 
-      if (teamError) {
-        console.error('Error fetching team:', teamError);
-        setError(teamError.message);
-        return { team: null, players: [] };
-      }
+      const playersJson = localStorage.getItem(STORAGE_KEY_PLAYERS);
+      const allPlayers: TeamPlayer[] = playersJson ? JSON.parse(playersJson) : [];
+      const players = allPlayers.filter(p => p.team_id === teamId);
 
-      const { data: players, error: playersError } = await supabase
-        .from('team_players')
-        .select('*')
-        .eq('team_id', teamId)
-        .order('created_at', { ascending: true });
-
-      if (playersError) {
-        console.error('Error fetching players:', playersError);
-      }
-
-      return { 
-        team: team as Team, 
-        players: (players || []) as TeamPlayer[] 
+      return {
+        team: team || null,
+        players
       };
     } catch (err) {
       console.error('Error in getTeamDetails:', err);
@@ -211,47 +131,28 @@ export const useTeamManagement = () => {
     setError(null);
 
     try {
-      // Check if player already exists in team
-      const { data: existing, error: existingError } = await supabase
-        .from('team_players')
-        .select('*')
-        .eq('team_id', data.team_id)
-        .eq('mobile_number', data.mobile_number)
-        .single();
+      const updatedTeam = mockDB.addPlayerToTeam(data.team_id, data.player_name);
 
-      if (existing) {
-        setError('Player already exists in this team');
-        return null;
-      }
+      const playersJson = localStorage.getItem(STORAGE_KEY_PLAYERS);
+      const players: TeamPlayer[] = playersJson ? JSON.parse(playersJson) : [];
 
-      // Check if user exists with this mobile number
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('mobile_number', data.mobile_number)
-        .single();
+      const newPlayer: TeamPlayer = {
+        id: generateUUID(),
+        team_id: data.team_id,
+        user_id: null,
+        mobile_number: data.mobile_number,
+        player_name: data.player_name,
+        role: data.role || 'player',
+        status: 'joined', // Auto-join for mock simplicity
+        invited_by: invitedBy,
+        joined_at: new Date().toISOString(),
+        created_at: new Date().toISOString()
+      };
 
-      const { data: player, error: insertError } = await supabase
-        .from('team_players')
-        .insert({
-          team_id: data.team_id,
-          user_id: userProfile?.id || null,
-          mobile_number: data.mobile_number,
-          player_name: data.player_name,
-          role: data.role || 'player',
-          status: userProfile ? 'pending' : 'invited',
-          invited_by: invitedBy,
-        })
-        .select()
-        .single();
+      players.push(newPlayer);
+      localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(players));
 
-      if (insertError) {
-        console.error('Error adding player:', insertError);
-        setError(insertError.message);
-        return null;
-      }
-
-      return player as TeamPlayer;
+      return newPlayer;
     } catch (err) {
       console.error('Error in addPlayer:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -266,18 +167,16 @@ export const useTeamManagement = () => {
     setError(null);
 
     try {
-      const { error: updateError } = await supabase
-        .from('team_players')
-        .update({ role })
-        .eq('id', playerId);
+      const playersJson = localStorage.getItem(STORAGE_KEY_PLAYERS);
+      const players: TeamPlayer[] = playersJson ? JSON.parse(playersJson) : [];
+      const index = players.findIndex(p => p.id === playerId);
 
-      if (updateError) {
-        console.error('Error updating player role:', updateError);
-        setError(updateError.message);
-        return false;
+      if (index !== -1) {
+        players[index].role = role;
+        localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(players));
+        return true;
       }
-
-      return true;
+      return false;
     } catch (err) {
       console.error('Error in updatePlayerRole:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -292,17 +191,16 @@ export const useTeamManagement = () => {
     setError(null);
 
     try {
-      const { error: deleteError } = await supabase
-        .from('team_players')
-        .delete()
-        .eq('id', playerId);
+      const playersJson = localStorage.getItem(STORAGE_KEY_PLAYERS);
+      const players: TeamPlayer[] = playersJson ? JSON.parse(playersJson) : [];
+      const playerToRemove = players.find(p => p.id === playerId);
 
-      if (deleteError) {
-        console.error('Error removing player:', deleteError);
-        setError(deleteError.message);
-        return false;
+      if (playerToRemove) {
+        mockDB.removePlayerFromTeam(playerToRemove.team_id, playerToRemove.player_name);
       }
 
+      const filtered = players.filter(p => p.id !== playerId);
+      localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(filtered));
       return true;
     } catch (err) {
       console.error('Error in removePlayer:', err);
@@ -319,73 +217,12 @@ export const useTeamManagement = () => {
     mobileNumber: string,
     playerName: string
   ): Promise<{ success: boolean; message: string }> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await supabase.functions.invoke('team-operations', {
-        body: {
-          action: 'getTeamByCode',
-          teamCode,
-        },
-      });
-
-      if (response.error || !response.data?.team) {
-        setError('Team not found');
-        return { success: false, message: 'Team not found' };
-      }
-
-      const joinResponse = await supabase.functions.invoke('team-operations', {
-        body: {
-          action: 'joinTeam',
-          teamId: response.data.team.id,
-          userId,
-          mobileNumber,
-          playerName,
-        },
-      });
-
-      if (joinResponse.error) {
-        setError(joinResponse.error.message);
-        return { success: false, message: joinResponse.error.message };
-      }
-
-      return { success: true, message: 'Joined team successfully!' };
-    } catch (err) {
-      console.error('Error in joinTeamByCode:', err);
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      return { success: false, message };
-    } finally {
-      setLoading(false);
-    }
+    // Mock successful join
+    return { success: true, message: 'Joined team successfully!' };
   }, []);
 
   const getInvitedTeams = useCallback(async (mobileNumber: string) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await supabase.functions.invoke('team-operations', {
-        body: {
-          action: 'getInvitedTeams',
-          mobileNumber,
-        },
-      });
-
-      if (response.error) {
-        setError(response.error.message);
-        return [];
-      }
-
-      return response.data?.invites || [];
-    } catch (err) {
-      console.error('Error in getInvitedTeams:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      return [];
-    } finally {
-      setLoading(false);
-    }
+    return [];
   }, []);
 
   return {

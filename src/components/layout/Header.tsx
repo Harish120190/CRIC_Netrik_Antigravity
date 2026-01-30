@@ -17,30 +17,33 @@ const Header: React.FC<HeaderProps> = ({
   showMessages = true
 }) => {
   return (
-    <header className="sticky top-0 z-40 w-full bg-card/95 backdrop-blur-lg border-b border-border">
-      <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg gradient-pitch flex items-center justify-center shadow-glow">
-            <CricketBat className="w-5 h-5 text-primary-foreground" />
+    <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl border-b border-border/50">
+      <div className="flex items-center justify-between h-16 px-6 max-w-7xl mx-auto">
+        <div className="flex items-center gap-3 group cursor-pointer">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow group-hover:scale-110 transition-transform duration-300">
+            <CricketBat className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-lg font-bold text-foreground">{title}</h1>
+          <div>
+            <h1 className="text-xl font-black text-foreground tracking-tighter uppercase">{title}</h1>
+            <div className="h-0.5 w-0 group-hover:w-full bg-primary transition-all duration-300" />
+          </div>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           {showSearch && (
-            <Button variant="ghost" size="icon" className="text-muted-foreground">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-primary/10 hover:text-primary rounded-xl">
               <Search className="w-5 h-5" />
             </Button>
           )}
           {showMessages && (
-            <Button variant="ghost" size="icon" className="text-muted-foreground">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-primary/10 hover:text-primary rounded-xl">
               <MessageCircle className="w-5 h-5" />
             </Button>
           )}
           {showNotifications && (
-            <Button variant="ghost" size="icon" className="text-muted-foreground relative">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-primary/10 hover:text-primary rounded-xl relative overflow-visible">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-live rounded-full" />
+              <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-accent border-2 border-background rounded-full live-pulse" />
             </Button>
           )}
         </div>

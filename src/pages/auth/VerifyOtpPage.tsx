@@ -1,129 +1,110 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
+import { Loader2, ShieldCheck, ArrowLeft } from 'lucide-react';
+// import {
+//   InputOTP,
+//   InputOTPGroup,
+//   InputOTPSlot,
+// } from "@/components/ui/input-otp";
 
-const VerifyOtpPage: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { verifyOtp } = useAuth();
-  const [loading, setLoading] = useState(false);
+const VerifyOtpPage = () => {
   const [otp, setOtp] = useState('');
-  const [resendTimer, setResendTimer] = useState(60);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { verifyOtp } = useAuth();
 
-  const phone = location.state?.phone;
+  const mobile = location.state?.mobile;
 
   useEffect(() => {
-    if (!phone) {
+    if (!mobile) {
       navigate('/auth/signin');
     }
-  }, [phone, navigate]);
+  }, [mobile, navigate]);
 
-  useEffect(() => {
-    if (resendTimer > 0) {
-      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendTimer]);
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.length !== 4) return;
 
-  const handleVerify = async () => {
-    if (otp.length !== 6) {
-      toast.error('Please enter a valid 6-digit OTP');
-      return;
-    }
-
-    setLoading(true);
+    setIsSubmitting(true);
     try {
-      const { error } = await verifyOtp(phone, otp);
-
-      if (error) {
-        toast.error('Invalid OTP. Please try again.');
-        return;
+      const success = await verifyOtp(mobile, otp);
+      if (success) {
+        toast.success("Mobile number verified successfully!");
+        navigate('/'); // Go to dashboard
+      } else {
+        toast.error("Invalid OTP. Try '1234'");
       }
-
-      toast.success('Phone verified successfully!');
-      navigate('/');
-    } catch (err) {
-      toast.error('Verification failed');
+    } catch (error) {
+      toast.error("Verification failed");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
-
-  const handleResend = async () => {
-    // Would trigger resend OTP
-    toast.info('OTP resent to your phone');
-    setResendTimer(60);
-  };
-
-  if (!phone) return null;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
-
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl gradient-pitch flex items-center justify-center">
-            <span className="text-2xl font-bold text-primary-foreground">OTP</span>
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <div className="flex items-center gap-2 mb-2">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-8 w-8">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <CardTitle className="text-2xl font-bold">Verify Mobile</CardTitle>
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Verify Phone</h1>
-          <p className="text-muted-foreground mt-2">
-            Enter the 6-digit code sent to {phone}
-          </p>
-        </div>
+          <CardDescription>
+            Enter the 4-digit code sent to <span className="font-semibold">{mobile}</span>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleVerify} className="space-y-6">
+            <div className="flex justify-center py-4">
+              <Input
+                maxLength={4}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                className="text-center text-2xl tracking-[1em] h-14"
+                placeholder="0000"
+              />
+              {/* <InputOTP maxLength={4} value={otp} onChange={(value) => setOtp(value)}>
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} />
+                  <InputOTPSlot index={1} />
+                  <InputOTPSlot index={2} />
+                  <InputOTPSlot index={3} />
+                </InputOTPGroup>
+              </InputOTP> */}
+            </div>
 
-        <div className="flex justify-center mb-6">
-          <InputOTP
-            maxLength={6}
-            value={otp}
-            onChange={(value) => setOtp(value)}
-          >
-            <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
-              <InputOTPSlot index={3} />
-              <InputOTPSlot index={4} />
-              <InputOTPSlot index={5} />
-            </InputOTPGroup>
-          </InputOTP>
-        </div>
+            <div className="text-center text-sm text-muted-foreground">
+              <p>Did not receive the code?</p>
+              <Button variant="link" className="p-0 h-auto font-semibold text-primary" type="button" onClick={() => toast.info("Resending OTP...")}>
+                Resend Code
+              </Button>
+            </div>
 
-        <Button
-          onClick={handleVerify}
-          variant="pitch"
-          size="lg"
-          className="w-full"
-          disabled={loading || otp.length !== 6}
-        >
-          {loading ? 'Verifying...' : 'Verify OTP'}
-        </Button>
-
-        <div className="text-center mt-6">
-          {resendTimer > 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Resend code in {resendTimer}s
-            </p>
-          ) : (
-            <button
-              onClick={handleResend}
-              className="text-sm text-primary hover:underline font-medium"
-            >
-              Resend OTP
-            </button>
-          )}
-        </div>
-      </div>
+            <Button type="submit" className="w-full" disabled={otp.length !== 4 || isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="mr-2 h-4 w-4" /> Verify & Login
+                </>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="justify-center border-t p-4 mt-2 bg-slate-50 rounded-b-xl">
+          <p className="text-xs text-muted-foreground">Demo OTP: 1234</p>
+        </CardFooter>
+      </Card>
     </div>
   );
 };

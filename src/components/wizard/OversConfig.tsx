@@ -1,10 +1,14 @@
 import React from 'react';
 import { Clock, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface OversConfigProps {
   selectedOvers: number;
   onSelectOvers: (overs: number) => void;
+  enableShotDirection: boolean;
+  onToggleShotDirection: (value: boolean) => void;
 }
 
 const oversOptions = [
@@ -17,7 +21,12 @@ const oversOptions = [
   { value: 50, label: '50 Overs', description: 'ODI format', duration: '~7 hours' },
 ];
 
-const OversConfig: React.FC<OversConfigProps> = ({ selectedOvers, onSelectOvers }) => {
+const OversConfig: React.FC<OversConfigProps> = ({
+  selectedOvers,
+  onSelectOvers,
+  enableShotDirection,
+  onToggleShotDirection
+}) => {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="text-center space-y-2">
@@ -87,6 +96,20 @@ const OversConfig: React.FC<OversConfigProps> = ({ selectedOvers, onSelectOvers 
               {num}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Shot Direction Toggle */}
+      <div className="pt-6 border-t border-border">
+        <div className="flex items-center justify-between p-4 rounded-xl border-2 border-border bg-card">
+          <div className="space-y-0.5">
+            <Label className="text-base font-bold text-foreground">Select Shot Direction</Label>
+            <p className="text-sm text-muted-foreground">Record where each shot is played on the ground</p>
+          </div>
+          <Switch
+            checked={enableShotDirection}
+            onCheckedChange={onToggleShotDirection}
+          />
         </div>
       </div>
     </div>

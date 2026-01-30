@@ -11,7 +11,7 @@ import { z } from 'zod';
 const signUpSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
   email: z.string().email('Invalid email address'),
-  phone: z.string().regex(/^\+?[1-9]\d{9,14}$/, 'Invalid phone number').optional().or(z.literal('')),
+  phone: z.string().regex(/^\+?[1-9]\d{9,14}$/, 'Invalid phone number'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -21,7 +21,7 @@ const signUpSchema = z.object({
 
 const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { signup } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -44,28 +44,24 @@ const SignUpPage: React.FC = () => {
     setErrors({});
 
     try {
-      const validatedData = signUpSchema.parse(formData);
+      const validatedData = signUpSchema.parse({
+        ...formData,
+        email: formData.email.trim(),
+      });
       setLoading(true);
 
-      const { error } = await signUp(
-        validatedData.email,
-        validatedData.password,
-        validatedData.fullName,
-        validatedData.phone || undefined
-      );
+      // Create user and navigate to OTP
+      await signup({
+        email: validatedData.email,
+        password: validatedData.password,
+        fullName: validatedData.fullName,
+        mobile: validatedData.phone,
+      });
 
-      if (error) {
-        if (error.message.includes('already registered')) {
-          toast.error('This email is already registered. Please sign in.');
-        } else {
-          toast.error(error.message);
-        }
-        return;
-      }
+      toast.success('Account created! Please verify your mobile.');
+      navigate('/auth/verify-otp', { state: { mobile: validatedData.phone } });
 
-      toast.success('Account created successfully!');
-      navigate('/');
-    } catch (err) {
+    } catch (err: any) {
       if (err instanceof z.ZodError) {
         const newErrors: Record<string, string> = {};
         err.errors.forEach(error => {
@@ -75,7 +71,7 @@ const SignUpPage: React.FC = () => {
         });
         setErrors(newErrors);
       } else {
-        toast.error('An unexpected error occurred');
+        toast.error(err.message || 'Registration failed');
       }
     } finally {
       setLoading(false);
@@ -86,8 +82,8 @@ const SignUpPage: React.FC = () => {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl gradient-pitch flex items-center justify-center">
-            <span className="text-2xl font-bold text-primary-foreground">CS</span>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary flex items-center justify-center">
+            <User className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Create Account</h1>
           <p className="text-muted-foreground mt-2">Join Cricket Scorer today</p>
@@ -129,14 +125,14 @@ const SignUpPage: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number (Optional)</Label>
+            <Label htmlFor="phone">Mobile Number</Label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 id="phone"
                 name="phone"
                 type="tel"
-                placeholder="+1234567890"
+                placeholder="9876543210"
                 value={formData.phone}
                 onChange={handleChange}
                 className="pl-10"
@@ -186,13 +182,7 @@ const SignUpPage: React.FC = () => {
             {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
           </div>
 
-          <Button
-            type="submit"
-            variant="pitch"
-            size="lg"
-            className="w-full"
-            disabled={loading}
-          >
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Creating Account...' : 'Create Account'}
           </Button>
         </form>

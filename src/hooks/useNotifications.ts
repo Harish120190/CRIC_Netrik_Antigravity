@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { generateUUID } from '@/services/mockDatabase';
 
 export interface Notification {
   id: string;
@@ -12,6 +12,8 @@ export interface Notification {
   read: boolean;
   created_at: string;
 }
+
+const STORAGE_KEY = 'cric_hub_notifications';
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -28,17 +30,12 @@ export function useNotifications() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const dataJson = localStorage.getItem(STORAGE_KEY);
+      const all: Notification[] = dataJson ? JSON.parse(dataJson) : [];
+      const filtered = all.filter(n => n.user_id === user.id).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-      if (error) throw error;
-
-      setNotifications(data || []);
-      setUnreadCount((data || []).filter((n: Notification) => !n.read).length);
+      setNotifications(filtered);
+      setUnreadCount(filtered.filter((n) => !n.read).length);
     } catch (err) {
       console.error('Error fetching notifications:', err);
     } finally {
@@ -47,12 +44,13 @@ export function useNotifications() {
   }, [user]);
 
   const markAsRead = async (notificationId: string) => {
-    const { error } = await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('id', notificationId);
+    const dataJson = localStorage.getItem(STORAGE_KEY);
+    const all: Notification[] = dataJson ? JSON.parse(dataJson) : [];
+    const index = all.findIndex(n => n.id === notificationId);
 
-    if (!error) {
+    if (index !== -1) {
+      all[index].read = true;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
       setNotifications((prev) =>
         prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
       );
@@ -63,45 +61,18 @@ export function useNotifications() {
   const markAllAsRead = async () => {
     if (!user) return;
 
-    const { error } = await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('user_id', user.id)
-      .eq('read', false);
+    const dataJson = localStorage.getItem(STORAGE_KEY);
+    const all: Notification[] = dataJson ? JSON.parse(dataJson) : [];
 
-    if (!error) {
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-      setUnreadCount(0);
-    }
+    const updated = all.map(n => n.user_id === user.id ? { ...n, read: true } : n);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setUnreadCount(0);
   };
 
   useEffect(() => {
     fetchNotifications();
-
-    if (!user) return;
-
-    // Subscribe to realtime notifications
-    const channel = supabase
-      .channel(`notifications-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          setNotifications((prev) => [payload.new as Notification, ...prev]);
-          setUnreadCount((prev) => prev + 1);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchNotifications, user]);
+  }, [fetchNotifications]);
 
   return {
     notifications,

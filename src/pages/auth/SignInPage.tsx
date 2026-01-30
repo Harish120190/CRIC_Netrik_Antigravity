@@ -20,7 +20,7 @@ const phoneSchema = z.object({
 
 const SignInPage: React.FC = () => {
   const navigate = useNavigate();
-  const { signIn, signInWithPhone } = useAuth();
+  const { loginWithPhone, loginWithEmail } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('email');
@@ -31,33 +31,30 @@ const SignInPage: React.FC = () => {
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+    setLoading(true);
 
     try {
-      const validatedData = emailSchema.parse(emailData);
-      setLoading(true);
+      const { email, password } = emailSchema.parse(emailData);
 
-      const { error } = await signIn(validatedData.email, validatedData.password);
+      // Using new loginWithEmail from context
+      const success = await loginWithEmail(email, password);
 
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          toast.error('Invalid email or password');
-        } else {
-          toast.error(error.message);
-        }
+      if (!success) {
+        toast.error('Invalid email or password');
         return;
       }
 
       toast.success('Welcome back!');
       navigate('/');
-    } catch (err) {
+    } catch (err: any) {
       if (err instanceof z.ZodError) {
         const newErrors: Record<string, string> = {};
         err.errors.forEach(error => {
-          if (error.path[0]) {
-            newErrors[error.path[0] as string] = error.message;
-          }
+          if (error.path[0]) newErrors[error.path[0] as string] = error.message;
         });
         setErrors(newErrors);
+      } else {
+        toast.error('Login failed');
       }
     } finally {
       setLoading(false);
@@ -67,29 +64,30 @@ const SignInPage: React.FC = () => {
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+    setLoading(true);
 
     try {
-      const validatedData = phoneSchema.parse(phoneData);
-      setLoading(true);
+      const { phone } = phoneSchema.parse(phoneData);
 
-      const { error } = await signInWithPhone(validatedData.phone);
+      // Using new loginWithPhone from context
+      const userExists = await loginWithPhone(phone);
 
-      if (error) {
-        toast.error(error.message);
+      if (!userExists) {
+        toast.error('User not found. Please sign up.');
         return;
       }
 
       toast.success('OTP sent to your phone!');
-      navigate('/auth/verify-otp', { state: { phone: validatedData.phone } });
-    } catch (err) {
+      navigate('/auth/verify-otp', { state: { mobile: phone } });
+    } catch (err: any) {
       if (err instanceof z.ZodError) {
         const newErrors: Record<string, string> = {};
         err.errors.forEach(error => {
-          if (error.path[0]) {
-            newErrors[error.path[0] as string] = error.message;
-          }
+          if (error.path[0]) newErrors[error.path[0] as string] = error.message;
         });
         setErrors(newErrors);
+      } else {
+        toast.error('Login failed');
       }
     } finally {
       setLoading(false);
@@ -100,8 +98,8 @@ const SignInPage: React.FC = () => {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl gradient-pitch flex items-center justify-center">
-            <span className="text-2xl font-bold text-primary-foreground">CS</span>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary flex items-center justify-center">
+            <span className="text-2xl font-bold text-primary-foreground">CN</span>
           </div>
           <h1 className="text-2xl font-bold text-foreground">Welcome Back</h1>
           <p className="text-muted-foreground mt-2">Sign in to continue</p>
@@ -156,7 +154,7 @@ const SignInPage: React.FC = () => {
 
               <Button
                 type="submit"
-                variant="pitch"
+                variant="default" // Changed from pitch to default
                 size="lg"
                 className="w-full"
                 disabled={loading}
@@ -175,7 +173,7 @@ const SignInPage: React.FC = () => {
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="+1234567890"
+                    placeholder="+919876543210"
                     value={phoneData.phone}
                     onChange={(e) => setPhoneData({ phone: e.target.value })}
                     className="pl-10"
@@ -186,7 +184,7 @@ const SignInPage: React.FC = () => {
 
               <Button
                 type="submit"
-                variant="pitch"
+                variant="default"
                 size="lg"
                 className="w-full"
                 disabled={loading}

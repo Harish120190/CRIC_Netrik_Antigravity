@@ -1,15 +1,24 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  Users, 
-  Trophy, 
-  History, 
-  Medal, 
-  Bell, 
-  User, 
+import {
+  Home,
+  Users,
+  Trophy,
+  History,
+  Medal,
+  Bell,
+  User,
   UserPlus,
   Plus,
-  LogOut
+  LogOut,
+  LayoutDashboard,
+  Zap,
+  Box,
+  Circle,
+  Dribbble,
+  LayoutList,
+  Settings,
+  ShieldCheck,
+  Activity
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,10 +43,24 @@ import { cn } from '@/lib/utils';
 
 const mainNavItems = [
   { title: 'Home', url: '/', icon: Home },
+  { title: 'Activity Feed', url: '/feed', icon: Activity },
   { title: 'Teams', url: '/teams', icon: Users },
   { title: 'Tournaments', url: '/tournaments', icon: Trophy },
+  { title: 'Network', url: '/network', icon: Users },
+  { title: 'Profile', url: '/profile', icon: User },
   { title: 'Matches', url: '/matches', icon: History },
-  { title: 'Leaderboard', url: '/leaderboard', icon: Medal },
+  { title: 'Match Challenges', url: '/challenges', icon: ShieldCheck },
+  { title: 'Player Leaderboard', url: '/leaderboard/players', icon: Medal },
+  { title: 'Team Leaderboard', url: '/leaderboard/teams', icon: Trophy },
+  { title: 'My Cricket', url: '/my-cricket', icon: LayoutDashboard },
+];
+
+const ballTypeItems = [
+  { title: 'All Matches', url: '/matches/ball/all', icon: LayoutList },
+  { title: 'Tennis Ball', url: '/matches/ball/tennis', icon: Dribbble },
+  { title: 'Box Cricket', url: '/matches/ball/box', icon: Box },
+  { title: 'Leather Ball', url: '/matches/ball/leather', icon: Circle },
+  { title: 'Stitch Ball', url: '/matches/ball/stitch', icon: Zap },
 ];
 
 const quickActions = [
@@ -51,7 +74,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const { user, profile, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
 
   const isActive = (path: string) => {
@@ -69,12 +92,12 @@ export function AppSidebar() {
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    logout();
     navigate('/auth/signin');
   };
 
   return (
-    <Sidebar 
+    <Sidebar
       className={cn(
         "border-r border-border bg-card transition-all duration-300",
         collapsed ? "w-16" : "w-64"
@@ -174,6 +197,41 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* Cricket Categories */}
+        <SidebarGroup>
+          {!collapsed && (
+            <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2 mb-2">
+              Cricket Categories
+            </SidebarGroupLabel>
+          )}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {ballTypeItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url)}
+                    tooltip={collapsed ? item.title : undefined}
+                  >
+                    <NavLink
+                      to={item.url}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
+                        "hover:bg-muted/50",
+                        collapsed && "justify-center px-1"
+                      )}
+                      activeClassName="bg-primary/10 text-primary font-medium"
+                    >
+                      <item.icon className={cn("w-4 h-4 shrink-0", isActive(item.url) && "text-primary")} />
+                      {!collapsed && <span className="text-sm">{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {/* Quick Actions */}
         {!collapsed && (
           <SidebarGroup>
@@ -209,19 +267,28 @@ export function AppSidebar() {
             "flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-all cursor-pointer",
             collapsed && "justify-center"
           )}
-          onClick={() => navigate('/profile')}
+            onClick={() => navigate('/profile')}
           >
             <Avatar className="w-9 h-9 shrink-0">
-              <AvatarImage src={profile?.avatar_url || undefined} />
+              <AvatarImage src={undefined} />
               <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
-                {getInitials(profile?.full_name || 'U')}
+                {getInitials(user.fullName || 'U')}
               </AvatarFallback>
             </Avatar>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
-                  {profile?.full_name || 'User'}
-                </p>
+                <div className="flex items-center gap-1">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {user.fullName || 'User'}
+                  </p>
+                  {user.verificationBadge === 'blue_tick' && (
+                    <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center shrink-0" title="Verified">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-2 h-2">
+                        <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground truncate">
                   {user.email}
                 </p>

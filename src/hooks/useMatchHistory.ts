@@ -8,6 +8,7 @@ export interface MatchFilters {
   team: string;
   dateFrom: string;
   dateTo: string;
+  ballType: string;
 }
 
 export interface MatchHistoryItem extends Match {
@@ -53,6 +54,10 @@ export const useMatchHistory = (filters: Partial<MatchFilters>) => {
           filtered = filtered.filter(m => m.team1_name === filters.team || m.team2_name === filters.team);
         }
 
+        if (filters.ballType && filters.ballType !== 'all') {
+          filtered = filtered.filter(m => m.ball_type === filters.ballType);
+        }
+
         // Sort desc
         filtered.sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime());
 
@@ -71,7 +76,7 @@ export const useMatchHistory = (filters: Partial<MatchFilters>) => {
     };
 
     fetchMatches();
-  }, [filters?.status, filters?.venue, filters?.dateFrom, filters?.dateTo, filters?.search, filters?.team]);
+  }, [filters?.status, filters?.venue, filters?.dateFrom, filters?.dateTo, filters?.search, filters?.team, filters?.ballType]);
 
   return { matches, isLoading, venues, teams };
 }

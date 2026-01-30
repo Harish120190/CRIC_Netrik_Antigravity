@@ -18,7 +18,8 @@ import { Separator } from '@/components/ui/separator';
 import { mockDB } from '@/services/mockDatabase'; // Import MockDB
 import { downloadCSV } from '@/utils/csvExport'; // Import CSV Utility
 import { toast } from 'sonner';
-import { ArrowLeft, Calendar, Save, CheckCircle2, Trophy, Users, Globe } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { ArrowLeft, Calendar, Save, CheckCircle2, Trophy, Users, Globe, Info } from 'lucide-react';
 
 const STEPS = [
     { id: 'basics', title: 'Match Info', icon: Trophy },
@@ -56,7 +57,8 @@ export default function ScheduleMatchPage() {
         city: '',
         winning_prize: '',
         match_fee: '',
-        toss_delayed: false
+        toss_delayed: false,
+        enable_shot_direction: true
     });
 
     const [teams, setTeams] = useState<any[]>(mockDB.getTeams());
@@ -83,6 +85,33 @@ export default function ScheduleMatchPage() {
     };
 
     const handleNext = () => {
+        // Validation per step
+        if (currentStep === 0) {
+            // Check basics
+            if (matchData.overs <= 0) {
+                toast.error("Overs must be greater than 0");
+                return;
+            }
+        }
+        else if (currentStep === 1) {
+            // Check teams
+            if (!matchData.team1_name || !matchData.team2_name) {
+                toast.error("Please select or enter both team names");
+                return;
+            }
+            if (matchData.team1_name === matchData.team2_name) {
+                toast.error("Teams must be different");
+                return;
+            }
+        }
+        else if (currentStep === 2) {
+            // Check logistics
+            if (!matchData.match_date) {
+                toast.error("Please select a match date");
+                return;
+            }
+        }
+
         if (currentStep < STEPS.length - 1) setCurrentStep(c => c + 1);
     };
 
@@ -118,7 +147,10 @@ export default function ScheduleMatchPage() {
                 match_fee: matchData.match_fee,
                 status: 'scheduled',
                 umpire_name: 'TBD', // Defaults
-                scorer_name: 'TBD'
+                scorer_name: 'TBD',
+                settings: {
+                    enableShotDirection: matchData.enable_shot_direction
+                }
             } as any); // using any to bypass strict type check for now vs interface mismatch
 
             toast.success("Match Scheduled Successfully (Offline Mode)!");
@@ -173,6 +205,18 @@ export default function ScheduleMatchPage() {
                         <div className="grid gap-2">
                             <Label>Overs</Label>
                             <Input type="number" value={matchData.overs} onChange={(e) => updateField('overs', parseInt(e.target.value))} />
+                        </div>
+                        <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-card/50 mt-4">
+                            <div className="space-y-0.5">
+                                <Label className="text-base font-semibold">Enable Shot Direction</Label>
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                    Track wagon wheel & boundaries <Info className="w-3 h-3 text-primary" />
+                                </p>
+                            </div>
+                            <Switch
+                                checked={matchData.enable_shot_direction}
+                                onCheckedChange={(v) => updateField('enable_shot_direction', v)}
+                            />
                         </div>
                     </div>
                 );

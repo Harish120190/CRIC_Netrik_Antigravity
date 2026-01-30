@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '@/components/layout/BottomNav';
 import HomePage from './HomePage';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
+import { exportAllData } from '@/services/CSVExport';
 import ScoringPage, { MatchSummaryData } from './ScoringPage';
 import TournamentsPage from './TournamentsPage';
 import ProfilePage from './ProfilePage';
@@ -16,6 +19,9 @@ interface MatchData {
   overs: number;
   tossWinner: Team;
   tossDecision: 'bat' | 'bowl';
+  playersTeam1?: string[];
+  playersTeam2?: string[];
+  enableShotDirection: boolean;
 }
 
 const Index: React.FC = () => {
@@ -26,7 +32,7 @@ const Index: React.FC = () => {
 
   const handleNavigate = (path: string) => {
     // Route external paths to react-router
-    if (path === '/teams' || path.startsWith('/teams/') || path === '/join-team' || path.startsWith('/auth/')) {
+    if (path === '/teams' || path.startsWith('/teams/') || path === '/join-team' || path.startsWith('/auth/') || path.startsWith('/leaderboard') || path === '/my-cricket' || path.startsWith('/matches/ball/')) {
       navigate(path);
       return;
     }
@@ -55,10 +61,15 @@ const Index: React.FC = () => {
         return <HomePage onNavigate={handleNavigate} />;
       case '/score':
         return (
-          <ScoringPage 
-            onBack={() => handleNavigate('/')} 
+          <ScoringPage
+            onBack={() => handleNavigate('/')}
             onEndMatch={handleEndMatch}
-            matchData={matchData} 
+            onUpdateMatchData={(updates) => {
+              if (matchData) {
+                setMatchData({ ...matchData, ...updates });
+              }
+            }}
+            matchData={matchData}
           />
         );
       case '/match-wizard':
@@ -93,6 +104,18 @@ const Index: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       {renderPage()}
+
+      {/* Backup Button for CSV Portable Backend */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={exportAllData}
+        className="fixed bottom-20 right-4 z-50 rounded-full shadow-lg bg-card border-2 hover:bg-accent transition-all"
+      >
+        <Download className="w-4 h-4 mr-2" />
+        Backup CSV
+      </Button>
+
       {/* Only show bottom nav on mobile, sidebar handles desktop navigation */}
       {!hideBottomNav && (
         <div className="md:hidden">

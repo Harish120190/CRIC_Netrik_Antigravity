@@ -1,8 +1,8 @@
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/toaster"; // HMR Trigger
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Index from "./pages/Index";
@@ -29,6 +29,12 @@ import OrganizerDashboard from "./pages/organizer/OrganizerDashboard";
 import CreateTournamentPageOrg from "./pages/organizer/CreateTournamentPage";
 import GroundsPage from "./pages/organizer/GroundsPage";
 import AddGroundPage from "./pages/organizer/AddGroundPage";
+import TournamentManagePage from "./pages/organizer/TournamentManagePage";
+import MyCricketPage from "./pages/MyCricketPage";
+import BallCategoryPage from "./pages/BallCategoryPage";
+import NetworkPage from "./pages/NetworkPage";
+import ActivityFeedPage from "./pages/ActivityFeedPage";
+import ChallengeDashboard from "./components/match/ChallengeDashboard";
 
 const queryClient = new QueryClient();
 
@@ -40,15 +46,16 @@ function AppRoutes() {
   const hideSidebarPaths = ['/auth/signin', '/auth/signup', '/auth/verify-otp'];
   const showSidebar = !hideSidebarPaths.some(path => location.pathname.startsWith(path));
 
-  // Helper for navigation prop
+  const navigate = useNavigate();
   const handleNavigate = (path: string) => {
-    window.location.href = path;
+    navigate(path);
   };
 
   return (
     <AppLayout showSidebar={showSidebar}>
       <Routes>
         <Route path="/" element={<Index />} />
+        <Route path="/feed" element={<ActivityFeedPage />} />
         <Route path="/auth/signin" element={<SignInPage />} />
         <Route path="/auth/signup" element={<SignUpPage />} />
         <Route path="/auth/verify-otp" element={<VerifyOtpPage />} />
@@ -60,18 +67,23 @@ function AppRoutes() {
         <Route path="/tournaments/create" element={<CreateTournamentPage />} />
         <Route path="/tournaments/:tournamentId" element={<TournamentDetailsPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage onNavigate={handleNavigate} />} />
+        <Route path="/leaderboard/:type" element={<LeaderboardPage onNavigate={handleNavigate} />} />
+        <Route path="/my-cricket" element={<MyCricketPage />} />
+        <Route path="/matches/ball/:ballType" element={<BallCategoryPage />} />
         <Route path="/matches" element={<MatchHistoryPage onNavigate={handleNavigate} />} />
         <Route path="/notifications" element={<NotificationsPage onNavigate={handleNavigate} />} />
         <Route path="/player/:playerId" element={<PlayerProfilePage onNavigate={handleNavigate} />} />
-        <Route path="/profile" element={<ProfilePage onNavigate={handleNavigate} />} />
+        <Route path="/profile" element={<ProfilePage />} />
 
         <Route path="/schedule-match" element={<ScheduleMatchPage />} />
         <Route path="/match/:matchId" element={<MatchLobbyPage />} />
         <Route path="/looking" element={<LookingPage />} />
+        <Route path="/challenges" element={<ChallengeDashboard />} />
         <Route path="/organizer" element={<OrganizerDashboard />} />
         <Route path="/organizer/create-tournament" element={<CreateTournamentPageOrg />} />
         <Route path="/organizer/grounds" element={<GroundsPage />} />
         <Route path="/organizer/grounds/add" element={<AddGroundPage />} />
+        <Route path="/organizer/tournament/:tournamentId" element={<TournamentManagePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>

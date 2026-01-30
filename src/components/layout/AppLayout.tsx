@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 import { ReactNode, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -15,7 +16,13 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Calendar
+  Calendar,
+  Zap,
+  Box,
+  Circle,
+  Dribbble,
+  LayoutList,
+  LayoutDashboard
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,7 +39,17 @@ const mainNavItems = [
   { title: 'Teams', url: '/teams', icon: Users },
   { title: 'Tournaments', url: '/tournaments', icon: Trophy },
   { title: 'Matches', url: '/matches', icon: History },
-  { title: 'Leaderboard', url: '/leaderboard', icon: Medal },
+  { title: 'Player Leaderboard', url: '/leaderboard/players', icon: Medal },
+  { title: 'Team Leaderboard', url: '/leaderboard/teams', icon: Trophy },
+  { title: 'My Cricket', url: '/my-cricket', icon: LayoutDashboard },
+];
+
+const ballTypeItems = [
+  { title: 'All Matches', url: '/matches/ball/all', icon: LayoutList },
+  { title: 'Tennis Ball', url: '/matches/ball/tennis', icon: Dribbble },
+  { title: 'Box Cricket', url: '/matches/ball/box', icon: Box },
+  { title: 'Leather Ball', url: '/matches/ball/leather', icon: Circle },
+  { title: 'Stitch Ball', url: '/matches/ball/stitch', icon: Zap },
 ];
 
 const quickActions = [
@@ -50,7 +67,7 @@ interface AppLayoutProps {
 export function AppLayout({ children, showSidebar = true }: AppLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, profile, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -74,8 +91,14 @@ export function AppLayout({ children, showSidebar = true }: AppLayoutProps) {
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/auth/signin');
+    try {
+      await logout();
+      navigate('/auth/login');
+      toast.success('Signed out successfully');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast.error('Failed to sign out');
+    }
   };
 
   const handleNavClick = (url: string) => {
@@ -164,6 +187,34 @@ export function AppLayout({ children, showSidebar = true }: AppLayoutProps) {
           </button>
         </nav>
 
+        {/* Cricket Categories */}
+        <div className="mt-6">
+          {!collapsed && (
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-3">
+              Cricket Categories
+            </p>
+          )}
+          <nav className="space-y-1">
+            {ballTypeItems.map((item) => (
+              <button
+                key={item.title}
+                onClick={() => handleNavClick(item.url)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 text-left group relative overflow-hidden",
+                  "hover:bg-primary/5 hover:text-primary",
+                  collapsed && "justify-center px-3",
+                  isActive(item.url)
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "text-muted-foreground"
+                )}
+              >
+                <item.icon className={cn("w-4 h-4 shrink-0 transition-colors", isActive(item.url) ? "text-primary" : "group-hover:text-primary")} />
+                {!collapsed && <span className="text-sm">{item.title}</span>}
+              </button>
+            ))}
+          </nav>
+        </div>
+
         {/* Quick Actions */}
         {!collapsed && (
           <div className="mt-6">
@@ -198,15 +249,15 @@ export function AppLayout({ children, showSidebar = true }: AppLayoutProps) {
               )}
             >
               <Avatar className="w-9 h-9 shrink-0">
-                <AvatarImage src={profile?.avatar_url || undefined} />
+                <AvatarImage src={(user as any)?.avatar_url || undefined} />
                 <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
-                  {getInitials(profile?.full_name || 'U')}
+                  {getInitials(user?.fullName || 'U')}
                 </AvatarFallback>
               </Avatar>
               {!collapsed && (
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">
-                    {profile?.full_name || 'User'}
+                    {user?.fullName || 'User'}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
                     {user.email}
@@ -215,13 +266,10 @@ export function AppLayout({ children, showSidebar = true }: AppLayoutProps) {
               )}
             </button>
             {!collapsed && (
-              <button
-                onClick={handleSignOut}
-                className="w-full flex items-center gap-3 px-3 py-2 mt-1 rounded-lg transition-all hover:bg-destructive/10 text-muted-foreground hover:text-destructive text-left"
-              >
+              <Button variant="ghost" className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={logout}>
                 <LogOut className="w-4 h-4 shrink-0" />
                 <span className="text-sm">Sign Out</span>
-              </button>
+              </Button>
             )}
           </>
         ) : (

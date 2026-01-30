@@ -70,8 +70,8 @@ const CreateTournamentPage: React.FC = () => {
                             <div key={step.id} className="flex flex-col items-center bg-background px-2">
                                 <div
                                     className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${isActive || isCompleted
-                                            ? 'bg-primary border-primary text-primary-foreground'
-                                            : 'bg-card border-muted-foreground text-muted-foreground'
+                                        ? 'bg-primary border-primary text-primary-foreground'
+                                        : 'bg-card border-muted-foreground text-muted-foreground'
                                         }`}
                                 >
                                     <Icon className="w-5 h-5" />
@@ -122,6 +122,23 @@ const CreateTournamentPage: React.FC = () => {
                                             type="date"
                                             value={formData.endDate}
                                             onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Reg. Deadline</Label>
+                                        <Input
+                                            type="date"
+                                            value={formData.startDate} // Reusing for now as mock field
+                                            className="text-xs"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Prize Pool</Label>
+                                        <Input
+                                            placeholder="Ex: 5000"
+                                            className="text-xs"
                                         />
                                     </div>
                                 </div>

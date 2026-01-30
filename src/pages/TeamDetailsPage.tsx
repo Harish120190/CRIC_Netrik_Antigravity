@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { 
-  ArrowLeft, Users, QrCode, Copy, Check, UserPlus, 
-  MoreVertical, Shield, Crown, User, Loader2, Trash2 
+import {
+  ArrowLeft, Users, QrCode, Copy, Check, UserPlus,
+  MoreVertical, Shield, Crown, User, Loader2, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,16 +32,11 @@ import {
 } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTeamManagement } from '@/hooks/useTeamManagement';
+import TeamBrandingSettings from '@/components/team/TeamBrandingSettings';
+import { Team } from '@/types/cricket';
 import { toast } from 'sonner';
 
-interface Team {
-  id: string;
-  name: string;
-  logo_url: string | null;
-  team_code: string;
-  qr_code_url: string | null;
-  created_by: string;
-}
+
 
 interface TeamPlayer {
   id: string;
@@ -59,7 +54,7 @@ const TeamDetailsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { getTeamDetails, addPlayer, updatePlayerRole, removePlayer, loading } = useTeamManagement();
-  
+
   const [team, setTeam] = useState<Team | null>(null);
   const [players, setPlayers] = useState<TeamPlayer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,7 +64,7 @@ const TeamDetailsPage = () => {
   const [newPlayerMobile, setNewPlayerMobile] = useState('');
   const [newPlayerRole, setNewPlayerRole] = useState<'player' | 'captain'>('player');
 
-  const isAdmin = team?.created_by === user?.id || 
+  const isAdmin = team?.created_by === user?.id ||
     players.some(p => p.user_id === user?.id && p.role === 'admin');
   const isCaptain = players.some(p => p.user_id === user?.id && p.role === 'captain');
   const canManage = isAdmin || isCaptain;
@@ -77,7 +72,7 @@ const TeamDetailsPage = () => {
   useEffect(() => {
     const fetchTeam = async () => {
       if (!teamId) return;
-      
+
       setIsLoading(true);
       const { team: teamData, players: playersData } = await getTeamDetails(teamId);
       setTeam(teamData);
@@ -196,11 +191,36 @@ const TeamDetailsPage = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="font-semibold truncate">{team.name}</h1>
-          {isAdmin && <Badge className="ml-auto">Admin</Badge>}
+          {isAdmin && (
+            <div className="ml-auto flex items-center gap-2">
+              <TeamBrandingSettings team={team} onUpdate={setTeam} />
+              <Badge>Admin</Badge>
+            </div>
+          )}
         </div>
       </header>
 
-      <main className="container max-w-lg mx-auto p-4 space-y-4">
+      {/* Hero Section with Branding */}
+      {(team.themeColor || team.logo) && (
+        <div
+          className="w-full h-32 bg-gradient-to-r from-primary/20 to-primary/5 flex items-end p-4 relative"
+          style={{
+            background: team.themeColor
+              ? `linear-gradient(to right, ${team.themeColor}, ${team.secondaryColor || team.themeColor})`
+              : undefined
+          }}
+        >
+          <div className="absolute -bottom-6 left-4 border-4 border-background rounded-full overflow-hidden w-20 h-20 bg-background flex items-center justify-center">
+            {team.logo ? (
+              <img src={team.logo} alt={team.name} className="w-full h-full object-cover" />
+            ) : (
+              <Shield className="w-10 h-10 text-muted-foreground" />
+            )}
+          </div>
+        </div>
+      )}
+
+      <main className={`container max-w-lg mx-auto p-4 space-y-4 ${team.logo ? 'pt-8' : ''}`}>
         {/* Team Code & QR */}
         <Card>
           <CardHeader className="pb-2">
@@ -218,17 +238,17 @@ const TeamDetailsPage = () => {
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               </Button>
             </div>
-            
+
             {team.qr_code_url && (
               <div className="flex justify-center">
-                <img 
-                  src={team.qr_code_url} 
-                  alt="Team QR Code" 
+                <img
+                  src={team.qr_code_url}
+                  alt="Team QR Code"
                   className="w-48 h-48 rounded-lg border"
                 />
               </div>
             )}
-            
+
             <p className="text-sm text-muted-foreground text-center mt-3">
               Share this code or QR to invite players
             </p>
@@ -284,8 +304,8 @@ const TeamDetailsPage = () => {
                           </SelectContent>
                         </Select>
                       </div>
-                      <Button 
-                        className="w-full" 
+                      <Button
+                        className="w-full"
                         onClick={handleAddPlayer}
                         disabled={loading}
                       >
@@ -301,8 +321,8 @@ const TeamDetailsPage = () => {
           <CardContent>
             <div className="space-y-2">
               {players.map((player) => (
-                <div 
-                  key={player.id} 
+                <div
+                  key={player.id}
                   className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
                 >
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -332,7 +352,7 @@ const TeamDetailsPage = () => {
                         {isAdmin && (
                           <>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={() => handleRemovePlayer(player.id)}
                               className="text-destructive"
                             >

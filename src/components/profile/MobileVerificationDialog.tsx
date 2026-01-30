@@ -5,6 +5,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { Loader2, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MobileVerificationDialogProps {
   open: boolean;
@@ -23,6 +24,7 @@ const MobileVerificationDialog: React.FC<MobileVerificationDialogProps> = ({
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  const { verifyOtp } = useAuth(); // Use auth mock
 
   useEffect(() => {
     if (open && phoneNumber) {
@@ -45,28 +47,16 @@ const MobileVerificationDialog: React.FC<MobileVerificationDialogProps> = ({
   const sendOtp = async () => {
     setStep('sending');
     setLoading(true);
-    
-    try {
-      // Use Supabase phone OTP for verification
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: phoneNumber,
-      });
 
-      if (error) {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to send verification code",
-          variant: "destructive"
-        });
-        onOpenChange(false);
-        return;
-      }
+    try {
+      // Mock sending OTP
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       setStep('verify');
       setResendTimer(60);
       toast({
         title: "Code Sent",
-        description: `Verification code sent to ${phoneNumber}`
+        description: `Verification code sent to ${phoneNumber} (Use 1234)`
       });
     } catch (error) {
       toast({
@@ -81,10 +71,10 @@ const MobileVerificationDialog: React.FC<MobileVerificationDialogProps> = ({
   };
 
   const handleVerify = async () => {
-    if (otp.length !== 6) {
+    if (otp.length !== 4) { // Mock uses 4 digit
       toast({
         title: "Error",
-        description: "Please enter a valid 6-digit code",
+        description: "Please enter '1234'",
         variant: "destructive"
       });
       return;
@@ -92,16 +82,12 @@ const MobileVerificationDialog: React.FC<MobileVerificationDialogProps> = ({
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        phone: phoneNumber,
-        token: otp,
-        type: 'sms'
-      });
+      const success = await verifyOtp(phoneNumber, otp);
 
-      if (error) {
+      if (!success) {
         toast({
           title: "Error",
-          description: "Invalid verification code. Please try again.",
+          description: "Invalid verification code. Use '1234'",
           variant: "destructive"
         });
         setOtp('');
@@ -139,7 +125,7 @@ const MobileVerificationDialog: React.FC<MobileVerificationDialogProps> = ({
             Verify Mobile Number
           </DialogTitle>
           <DialogDescription>
-            {step === 'sending' 
+            {step === 'sending'
               ? 'Sending verification code...'
               : `Enter the 6-digit code sent to ${phoneNumber}`
             }
@@ -154,7 +140,7 @@ const MobileVerificationDialog: React.FC<MobileVerificationDialogProps> = ({
           <div className="space-y-6 py-4">
             <div className="flex justify-center">
               <InputOTP
-                maxLength={6}
+                maxLength={4}
                 value={otp}
                 onChange={(value) => setOtp(value)}
                 disabled={loading}

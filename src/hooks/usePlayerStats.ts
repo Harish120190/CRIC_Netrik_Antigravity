@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { mockDB } from '@/services/mockDatabase';
 
 export interface PlayerStats {
   id: string;
@@ -53,19 +53,9 @@ export function usePlayerStats(userId?: string) {
     const fetchStats = async () => {
       setIsLoading(true);
       try {
-        const { data, error: fetchError } = await supabase
-          .from('player_stats')
-          .select('*')
-          .eq('user_id', userId)
-          .single();
-
-        if (fetchError && fetchError.code !== 'PGRST116') {
-          throw fetchError;
-        }
-
-        if (data) {
-          const computed = computeStats(data as PlayerStats);
-          setStats(computed);
+        const data = mockDB.getPlayerStats(userId);
+        if (data && data.length > 0) {
+          setStats(data[0]);
         } else {
           setStats(null);
         }
@@ -90,38 +80,18 @@ export function useLeaderboard(category: 'runs' | 'wickets' | 'catches' = 'runs'
     const fetchLeaderboard = async () => {
       setIsLoading(true);
       try {
-        let query = supabase
-          .from('player_stats')
-          .select(`
-            *,
-            profiles:user_id (
-              full_name,
-              avatar_url
-            )
-          `)
-          .gt('matches', 0);
+        const data = mockDB.getPlayerStats();
 
-        // Order by category
-        switch (category) {
-          case 'runs':
-            query = query.order('runs', { ascending: false });
-            break;
-          case 'wickets':
-            query = query.order('wickets', { ascending: false });
-            break;
-          case 'catches':
-            query = query.order('catches', { ascending: false });
-            break;
-        }
+        // Sort by category
+        const sorted = data.sort((a, b) => {
+          if (category === 'runs') return b.runs - a.runs;
+          if (category === 'wickets') return b.wickets - a.wickets;
+          if (category === 'catches') return b.catches - a.catches;
+          return 0;
+        });
 
-        const { data, error } = await query.limit(limit);
-
-        if (error) throw error;
-
-        const entries: LeaderboardEntry[] = (data || []).map((item: any, index: number) => ({
-          ...computeStats(item),
-          full_name: item.profiles?.full_name || 'Unknown Player',
-          avatar_url: item.profiles?.avatar_url,
+        const entries: LeaderboardEntry[] = sorted.slice(0, limit).map((item: any, index: number) => ({
+          ...item,
           rank: index + 1,
         }));
 

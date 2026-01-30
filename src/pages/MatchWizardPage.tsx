@@ -20,6 +20,7 @@ interface MatchWizardPageProps {
     tossDecision: 'bat' | 'bowl';
     playersTeam1: string[];
     playersTeam2: string[];
+    enableShotDirection: boolean;
   }) => void;
 }
 
@@ -44,6 +45,7 @@ const MatchWizardPage: React.FC<MatchWizardPageProps> = ({ onBack, onStartMatch 
   const [overs, setOvers] = useState(20);
   const [tossWinner, setTossWinner] = useState<Team | null>(null);
   const [tossDecision, setTossDecision] = useState<'bat' | 'bowl' | null>(null);
+  const [enableShotDirection, setEnableShotDirection] = useState(true);
 
   const canProceed = () => {
     switch (currentStep) {
@@ -81,6 +83,7 @@ const MatchWizardPage: React.FC<MatchWizardPageProps> = ({ onBack, onStartMatch 
         tossDecision,
         playersTeam1,
         playersTeam2,
+        enableShotDirection,
       });
     }
   };
@@ -140,6 +143,8 @@ const MatchWizardPage: React.FC<MatchWizardPageProps> = ({ onBack, onStartMatch 
           <OversConfig
             selectedOvers={overs}
             onSelectOvers={setOvers}
+            enableShotDirection={enableShotDirection}
+            onToggleShotDirection={setEnableShotDirection}
           />
         );
       case 4:
@@ -187,7 +192,7 @@ const MatchWizardPage: React.FC<MatchWizardPageProps> = ({ onBack, onStartMatch 
               Back
             </Button>
           )}
-          
+
           {currentStep < STEPS.length - 1 ? (
             <Button
               onClick={handleNext}

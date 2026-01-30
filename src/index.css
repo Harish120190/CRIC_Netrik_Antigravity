@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,124 +6,82 @@
 
 @layer base {
   :root {
-    /* Professional Theme: Deep Emerald & Slate */
-
-    /* Backgrounds: Subtle, premium off-whites */
-    --background: 210 20% 98%;
-    /* Very light blue-grey, not stark white */
+    --background: 210 40% 98%;
     --foreground: 222 47% 11%;
-    /* Deep slate for text */
-
-    /* Card Surfaces: Pure white with subtle depth */
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-
-    /* Primary: Deep Emerald - Sophisticated & Trustworthy */
-    /* HSL: 158 52% 38% - A richer, deeper green */
-    --primary: 158 52% 38%;
-    --primary-foreground: 0 0% 100%;
-
-    /* Secondary: Slate Blue - Professional accent */
+    --primary: 221 83% 53%;
+    /* Modern Blue */
+    --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222 47% 11.2%;
-
-    /* Muted: Subtle backgrounds for separators/secondary text */
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-
-    /* Accent: Premium Gold/Amber for highlights (Cricket ball colors/Trophies) */
-    --accent: 38 92% 50%;
-    /* Richer gold */
-    --accent-foreground: 38 92% 10%;
-
+    --accent: 262 83% 58%;
+    /* Vibrant Purple */
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 158 52% 38%;
+    --ring: 221 83% 53%;
+    --radius: 1rem;
 
-    --radius: 0.75rem;
-    /* Modern rounded corners */
-
-    /* Custom Cricket Specific Colors */
-    --pitch: 45 25% 65%;
-    /* Natural dry grass/pitch color */
-    --pitch-dark: 45 20% 40%;
-    --stumps: 25 50% 45%;
+    --pitch: 142 45% 44%;
+    /* Deep Cricket Green */
+    --pitch-dark: 142 40% 30%;
+    --stumps: 35 40% 50%;
     --ball-red: 355 85% 55%;
-    /* Rich cherry red */
     --ball-white: 0 0% 98%;
-
-    /* Functional Status Colors */
     --live: 0 85% 60%;
     --win: 142 70% 45%;
     --loss: 0 70% 60%;
 
-    /* Gradients: Modern & Subtle */
-    --gradient-pitch: linear-gradient(135deg, hsl(158 52% 38%) 0%, hsl(160 50% 30%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(221 83% 53%) 0%, hsl(262 83% 58%) 100%);
     --gradient-gold: linear-gradient(135deg, hsl(38 92% 50%) 0%, hsl(45 95% 55%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(158 52% 32%) 0%, hsl(210 30% 20%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(221 83% 45%) 0%, hsl(222 47% 15%) 100%);
 
-    /* Shadows: Soft & layered for depth (Glass/Modern UI) */
-    --shadow-card: 0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 4px 16px -4px rgba(0, 0, 0, 0.08);
-    --shadow-elevated: 0 10px 30px -10px rgba(0, 0, 0, 0.12);
-    --shadow-glow: 0 0 20px hsl(158 52% 38% / 0.2);
+    --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.04);
+    --shadow-elevated: 0 20px 40px rgba(0, 0, 0, 0.08);
+    --shadow-glow: 0 0 25px hsl(221 83% 53% / 0.15);
 
-    /* Sidebar */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary: 221 83% 53%;
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 210 40% 96.1%;
     --sidebar-accent-foreground: 222 47% 11%;
     --sidebar-border: 214.3 31.8% 91.4%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 221 83% 53%;
   }
 
   .dark {
-    /* Dark Mode: Deep Blue-Grey (Slate 950 base) */
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
-
     --card: 222 47% 11%;
     --card-foreground: 210 40% 98%;
-
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
-
-    /* Primary: Slightly brighter emerald for dark mode visibility */
     --primary: 158 52% 45%;
     --primary-foreground: 222 47% 11%;
-
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-
     --accent: 38 92% 50%;
     --accent-foreground: 222 47% 11%;
-
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 158 52% 45%;
-
     --pitch: 42 20% 30%;
     --pitch-dark: 42 15% 20%;
-
     --gradient-hero: linear-gradient(180deg, hsl(222 47% 8%) 0%, hsl(222 47% 11%) 100%);
-
-    /* Shadows for dark mode */
     --shadow-card: 0 4px 20px -4px rgba(0, 0, 0, 0.4);
     --shadow-elevated: 0 10px 40px -10px rgba(0, 0, 0, 0.6);
-
     --sidebar-background: 222 47% 10%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -133,9 +91,7 @@
     --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
@@ -143,9 +99,6 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', 'Poppins', sans-serif;
-    /* Prefer Inter for UI, fall back to Poppins */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
 
   h1,
@@ -178,38 +131,6 @@
 
   .score-update {
     animation: flash-score 0.4s ease-out;
-  }
-
-  .gradient-pitch {
-    background: var(--gradient-pitch);
-  }
-
-  .gradient-gold {
-    background: var(--gradient-gold);
-  }
-
-  .gradient-scoreboard {
-    background: var(--gradient-scoreboard);
-  }
-
-  .gradient-hero {
-    background: var(--gradient-hero);
-  }
-
-  .shadow-card {
-    box-shadow: var(--shadow-card);
-  }
-
-  .shadow-elevated {
-    box-shadow: var(--shadow-elevated);
-  }
-
-  .shadow-glow {
-    box-shadow: var(--shadow-glow);
-  }
-
-  .shadow-gold {
-    box-shadow: var(--shadow-gold);
   }
 
   .glass-card {
