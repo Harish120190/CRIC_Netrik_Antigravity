@@ -1,3 +1,4 @@
-name,city,start_date,end_date,ball_type,match_format,overs_per_innings,match_type,status
-"Premier League 2024","Mumbai","2024-03-01","2024-04-15","tennis","T20",20,"league","active"
-"Corporate Cup","Bangalore","2024-05-10","2024-05-12","leather","T10",10,"knockout","draft"
+name,city,venue,startDate,endDate,ballType,matchFormat,matchType,status,max_teams
+Premier League 2024,Mumbai,Wankhede Stadium,2024-03-01,2024-04-15,tennis,20,league,open_for_registration,16
+Corporate Cup,Bangalore,Chinnaswamy Stadium,2024-05-10,2024-05-12,leather,10,knockout,draft,8
+Summer Championship,Delhi,Feroz Shah Kotla,2024-06-01,2024-06-30,box,15,hybrid,open_for_registration,12

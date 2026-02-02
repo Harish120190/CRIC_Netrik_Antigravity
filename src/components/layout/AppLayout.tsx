@@ -119,7 +119,7 @@ export function AppLayout({ children, showSidebar = true }: AppLayoutProps) {
           </div>
           {!collapsed && (
             <div className="flex flex-col animate-in fade-in slide-in-from-left-4 duration-500">
-              <span className="font-bold text-xl tracking-tight text-foreground">CricNest</span>
+              <span className="font-bold text-xl tracking-tight text-foreground">cric.netrik</span>
               <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Pro Scorer</span>
             </div>
           )}
@@ -331,7 +331,7 @@ export function AppLayout({ children, showSidebar = true }: AppLayoutProps) {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Trophy className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="font-semibold text-foreground">CricNest</span>
+            <span className="font-semibold text-foreground">cric.netrik</span>
           </div>
         </header>
 

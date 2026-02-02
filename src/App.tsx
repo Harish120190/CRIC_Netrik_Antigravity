@@ -38,6 +38,7 @@ import ActivityFeedPage from "./pages/ActivityFeedPage";
 import ChallengeDashboard from "./components/match/ChallengeDashboard";
 import OrganizerPlayerManagementPage from "./pages/organizer/OrganizerPlayerManagementPage";
 import AdminVerificationDashboard from "./pages/admin/AdminVerificationDashboard";
+import CSVManagerPage from "./pages/CSVManagerPage";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +90,7 @@ function AppRoutes() {
         <Route path="/organizer/tournament/:tournamentId" element={<TournamentManagePage />} />
         <Route path="/organizer/player-management" element={<OrganizerPlayerManagementPage />} />
         <Route path="/admin/verification" element={<AdminVerificationDashboard />} />
+        <Route path="/csv-manager" element={<CSVManagerPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>

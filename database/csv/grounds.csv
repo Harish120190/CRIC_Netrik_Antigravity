@@ -1,4 +1,5 @@
-name,location,city,hourly_fee
-"Central Maidan","Churchgate","Mumbai",500
-"Shivaji Park","Dadar","Mumbai",200
-"Tech Park Ground","Whitefield","Bangalore",1200
+name,location,city,hourlyFee
+Wankhede Stadium,Marine Drive,Mumbai,5000
+Chinnaswamy Stadium,MG Road,Bangalore,4500
+Eden Gardens,BBD Bagh,Kolkata,4000
+Feroz Shah Kotla,Bahadur Shah Zafar Marg,Delhi,4800

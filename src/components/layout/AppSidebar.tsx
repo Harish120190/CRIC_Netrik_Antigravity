@@ -115,7 +115,7 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="font-bold text-lg text-foreground">CricNest</span>
+              <span className="font-bold text-lg text-foreground">cric.netrik</span>
               <span className="text-xs text-muted-foreground">Cricket Scoring</span>
             </div>
           )}
