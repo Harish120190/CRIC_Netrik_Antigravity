@@ -1,58 +1,83 @@
 import { mockDB } from "./mockDatabase";
+import { toast } from "sonner";
 
 export const seedFromCSV = async () => {
-    const seeded = localStorage.getItem('cric_hub_seeded');
-    if (seeded) return;
+    // Legacy support
+    await seedDemoData();
+};
 
+export const seedDemoData = async () => {
     try {
-        console.log("Seeding data from CSV files...");
+        console.log("Seeding Demo Data...");
 
-        // Define paths to CSVs (assuming they are served as static assets or just using hardcoded samples if fetch fails)
-        const csvFiles = [
-            { key: 'teams', path: '/database/csv/teams.csv' },
-            { key: 'grounds', path: '/database/csv/grounds.csv' },
-            { key: 'tournaments', path: '/database/csv/tournaments.csv' }
-        ];
-
-        // Since we are in a purely client-side environment at the moment, 
-        // and may not have a reliable way to 'fetch' local files without a server,
-        // we'll implement a robust parser that can be triggered by the user uploading a file,
-        // or we'll hardcode the initial state from the CSVs we read earlier.
-
-        // HELPER: Simple CSV Parser
-        const parseCSV = (csv: string) => {
-            const lines = csv.split('\n').filter(line => line.trim());
-            const headers = lines[0].split(',');
-            return lines.slice(1).map(line => {
-                const values = line.split(',');
-                return headers.reduce((obj, header, i) => {
-                    obj[header.trim()] = values[i]?.replace(/"/g, '').trim();
-                    return obj;
-                }, {} as any);
-            });
-        };
-
-        // For now, let's pre-populate based on what we saw in the CSVs
+        // 1. Create Teams
         const teams = [
             { name: "Chennai Super Kings", short_name: "CSK", city: "Chennai" },
-            { name: "Mumbai Indians", short_name: "MI", city: "Mumbai" },
             { name: "Royal Challengers Bangalore", short_name: "RCB", city: "Bangalore" },
+            { name: "Mumbai Indians", short_name: "MI", city: "Mumbai" },
             { name: "Kolkata Knight Riders", short_name: "KKR", city: "Kolkata" }
         ];
 
+        let createdTeams = [];
+        for (const t of teams) {
+            // Check if exists to avoid duplicates
+            const existing = mockDB.getTeams().find(existing => existing.name === t.name);
+            if (!existing) {
+                createdTeams.push(mockDB.createTeam(t.name));
+            } else {
+                createdTeams.push(existing);
+            }
+        }
+
+        // 2. Create Ground
         const grounds = [
-            { name: "Central Maidan", location: "Churchgate", city: "Mumbai", hourly_fee: 500 },
-            { name: "Shivaji Park", location: "Dadar", city: "Mumbai", hourly_fee: 200 },
-            { name: "Tech Park Ground", location: "Whitefield", city: "Bangalore", hourly_fee: 1200 }
+            { name: "Chepauk Stadium", location: "Chennai", city: "Chennai", hourly_fee: 5000 },
+            { name: "Chinnaswamy Stadium", location: "Bangalore", city: "Bangalore", hourly_fee: 5000 }
         ];
 
-        // Seed them
-        teams.forEach(t => mockDB.createTeam(t.name));
-        grounds.forEach(g => mockDB.addGround(g));
+        for (const g of grounds) {
+            const existing = mockDB.getGrounds().find(ex => ex.name === g.name);
+            if (!existing) {
+                mockDB.addGround(g);
+            }
+        }
+
+        // 3. Schedule a Demo Match (CSK vs RCB)
+        const team1 = createdTeams.find(t => t.name === "Chennai Super Kings");
+        const team2 = createdTeams.find(t => t.name === "Royal Challengers Bangalore");
+        const ground = mockDB.getGrounds()[0]; // Chepauk
+
+        if (team1 && team2) {
+            const existingMatch = mockDB.getMatches().find(m =>
+                m.team1_name === team1.name &&
+                m.team2_name === team2.name &&
+                m.status === 'scheduled'
+            );
+
+            if (!existingMatch) {
+                mockDB.createMatch({
+                    team1_id: team1.id,
+                    team2_id: team2.id,
+                    team1_name: team1.name,
+                    team2_name: team2.name,
+                    match_date: new Date().toISOString(), // Today
+                    match_type: "T20",
+                    overs: 2, // Short for demo
+                    ground_id: ground?.id || "demo_ground",
+                    ground_name: ground?.name || "Demo Ground",
+                    city: "Chennai"
+                });
+                console.log("Demo Match Scheduled: CSK vs RCB");
+            }
+        }
 
         localStorage.setItem('cric_hub_seeded', 'true');
-        console.log("Successfully seeded mock database!");
+        toast.success("Demo Data Populated! Teams and Match created.");
+
+        return true;
     } catch (e) {
         console.error("Failed to seed data", e);
+        toast.error("Failed to populate demo data");
+        return false;
     }
 };

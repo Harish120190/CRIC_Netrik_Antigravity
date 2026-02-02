@@ -13,6 +13,7 @@ import MobileVerificationDialog from '@/components/profile/MobileVerificationDia
 import NotificationSettings from '@/components/profile/NotificationSettings';
 import {
   User,
+  Users,
   Phone,
   Mail,
   Shield,
@@ -21,11 +22,15 @@ import {
   Check,
   X,
   Loader2,
-  Users,
   UserPlus,
-  ShieldCheck
+  ShieldCheck,
+  Palette,
+  Database
 } from 'lucide-react';
+import { ThemeSelector } from '@/components/common/ThemeSelector';
 import { toast } from '@/hooks/use-toast';
+import { seedDemoData } from '@/services/DataSeeder';
+import { PlayerVerificationCard } from '@/components/profile/PlayerVerificationCard';
 
 interface ProfilePageProps {
   onNavigate: (path: string) => void;
@@ -251,6 +256,9 @@ const ProfilePage: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* Identity & Verification */}
+        <PlayerVerificationCard />
+
         {/* Personal Information */}
         <Card className="mb-4">
           <CardHeader className="pb-3">
@@ -387,6 +395,19 @@ const ProfilePage: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* Appearance Settings */}
+        <Card className="mb-4">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Palette className="h-4 w-4" />
+              Appearance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ThemeSelector />
+          </CardContent>
+        </Card>
+
         {/* Notification Settings */}
         <NotificationSettings />
 
@@ -412,6 +433,29 @@ const ProfilePage: React.FC = () => {
               <UserPlus className="h-4 w-4" />
               Join a Team
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Demo / Developer Tools */}
+        <Card className="mb-4 border-dashed border-primary/20 bg-primary/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Database className="h-4 w-4 text-primary" />
+              Demo & Debug
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              className="w-full gap-2 border-primary/30 hover:bg-primary/10"
+              onClick={() => seedDemoData()}
+            >
+              <Database className="h-4 w-4" />
+              Populate Demo Data
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              Adds Teams (CSK, RCB) and an active T20 Match.
+            </p>
           </CardContent>
         </Card>
 

@@ -11,6 +11,8 @@ import ScoringPage, { MatchData } from './ScoringPage';
 // Define the shape (using the shared interface from mockDB or cricket types basically)
 // We will rely on the shared Match interface from mockDB
 import { Match as MatchType } from '@/services/mockDatabase';
+import MatchSummaryPage from './MatchSummaryPage';
+import { calculateMatchStats } from '@/services/matchStatsService';
 
 interface MatchDBRow extends MatchType { } // Alias for compatibility with existing code structure if needed
 
@@ -22,6 +24,7 @@ const mapMatchData = (data: MatchType): MatchData => ({
     overs: data.overs || 20,
     tossWinner: { id: (data.toss_winner === data.team1_name ? data.team1_id : data.team2_id) || '1', name: data.toss_winner || data.team1_name, logo: '', players: [], captainId: '', createdAt: new Date() },
     tossDecision: (data.toss_decision as 'bat' | 'bowl') || 'bat',
+    enableShotDirection: false // Default to false
 });
 
 export default function MatchLobbyPage() {
@@ -104,7 +107,7 @@ export default function MatchLobbyPage() {
                 matchId={match.id}
                 matchData={mapMatchData({
                     ...match,
-                    toss_winner_id: match.toss_winner || match.team1_id,
+                    toss_winner: match.toss_winner || match.team1_name, // Correcting property
                     toss_decision: match.toss_decision || 'bat'
                 })}
             />
@@ -136,57 +139,64 @@ export default function MatchLobbyPage() {
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to History
             </Button>
 
-            <Card className="max-w-lg mx-auto">
-                <CardHeader className="text-center border-b">
-                    <Badge className="mx-auto mb-2 w-fit" variant={match.status === 'scheduled' ? 'secondary' : 'default'}>
-                        {match.status.toUpperCase()}
-                    </Badge>
-                    <div className="flex justify-between items-center px-4">
-                        <div className="text-center">
-                            <h2 className="text-xl font-bold">{match.team1_name}</h2>
+            {match.status === 'completed' ? (
+                <MatchSummaryPage
+                    onBack={() => navigate('/matches')}
+                    onNewMatch={() => navigate('/schedule-match')}
+                    matchSummary={calculateMatchStats(match, mockDB.getBalls(match.id))}
+                    matchId={match.id}
+                />
+            ) : (
+                <Card className="max-w-lg mx-auto">
+                    <CardHeader className="text-center border-b">
+                        <Badge className="mx-auto mb-2 w-fit" variant={match.status === 'scheduled' ? 'secondary' : 'default'}>
+                            {match.status.toUpperCase()}
+                        </Badge>
+                        <div className="flex justify-between items-center px-4">
+                            <div className="text-center">
+                                <h2 className="text-xl font-bold">{match.team1_name}</h2>
+                            </div>
+                            <div className="text-muted-foreground font-bold">VS</div>
+                            <div className="text-center">
+                                <h2 className="text-xl font-bold">{match.team2_name}</h2>
+                            </div>
                         </div>
-                        <div className="text-muted-foreground font-bold">VS</div>
-                        <div className="text-center">
-                            <h2 className="text-xl font-bold">{match.team2_name}</h2>
+                        <CardTitle className="mt-4 text-lg hidden">Match Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6 pt-6">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-muted-foreground" />
+                                <span>{new Date(match.match_date).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-muted-foreground" />
+                                <span>{new Date(match.match_date).toLocaleTimeString()}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-muted-foreground" />
+                                <span>{match.ground_name || 'Ground not set'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Trophy className="w-4 h-4 text-muted-foreground" />
+                                <span className="capitalize">{match.match_type} Match</span>
+                            </div>
                         </div>
-                    </div>
-                    <CardTitle className="mt-4 text-lg hidden">Match Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6 pt-6">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-muted-foreground" />
-                            <span>{new Date(match.match_date).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-muted-foreground" />
-                            <span>{new Date(match.match_date).toLocaleTimeString()}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-muted-foreground" />
-                            <span>{match.ground_name || 'Ground not set'}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Trophy className="w-4 h-4 text-muted-foreground" />
-                            <span className="capitalize">{match.match_type} Match</span>
-                        </div>
-                    </div>
 
-                    {match.status === 'scheduled' && (
-                        <Button className="w-full h-12 text-lg" onClick={handleStartMatch}>
-                            Start Match / Toss
-                        </Button>
-                    )}
+                        {match.status === 'scheduled' && (
+                            <Button className="w-full h-12 text-lg" onClick={handleStartMatch}>
+                                Start Match / Toss
+                            </Button>
+                        )}
 
-                    {match.status === 'completed' && (
-                        <div className="text-center p-4 bg-muted rounded-lg">
-                            Match Completed. Result: {match.result || 'No result available'}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                        {match.status === 'completed' && (
+                            <div className="text-center p-4 bg-muted rounded-lg">
+                                Match Completed. Result: {match.result || 'No result available'}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 }
-
-

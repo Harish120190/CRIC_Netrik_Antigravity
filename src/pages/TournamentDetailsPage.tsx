@@ -14,8 +14,10 @@ import { TournamentRegistrationDialog } from '@/components/tournament/Tournament
 import { TournamentRegistrationsManager } from '@/components/tournament/TournamentRegistrationsManager';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { mockDB } from '@/services/mockDatabase';
+import { TournamentShareDialog } from '@/components/tournament/TournamentShareDialog';
 
-type TournamentStatus = 'upcoming' | 'ongoing' | 'completed';
+type TournamentStatus = 'draft' | 'open_for_registration' | 'ongoing' | 'completed';
 
 const TournamentDetailsPage: React.FC = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
@@ -39,7 +41,13 @@ const TournamentDetailsPage: React.FC = () => {
           ...data.tournament,
           status: data.tournament.status as TournamentStatus
         });
-        setTeams(data.teams);
+        setTeams(data.teams.map(t => ({
+          ...t,
+          team: {
+            ...t.team,
+            logo_url: t.team.logo_url || '' // Ensure string
+          }
+        })));
       } catch (err) {
         console.error('Failed to fetch tournament:', err);
       } finally {
@@ -52,12 +60,41 @@ const TournamentDetailsPage: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      upcoming: 'bg-primary/10 text-primary',
+      open_for_registration: 'bg-green-100 text-green-800',
       ongoing: 'bg-live/10 text-live',
       completed: 'bg-muted text-muted-foreground',
+      draft: 'bg-gray-100 text-gray-800'
     };
-    return styles[status as keyof typeof styles] || styles.upcoming;
+    return styles[status as keyof typeof styles] || styles.draft;
   };
+
+  // Check if user has a pending team
+  const pendingTeam = teams.find(t => t.status === 'pending' && t.team?.owner_id === user?.id);
+
+  const handleWithdraw = async (tournamentTeamId: string) => {
+    mockDB.updateTournamentTeam(tournamentTeamId, { status: 'rejected', rejection_reason: 'Withdrawn by Captain' });
+    const data = await getTournamentDetails(tournamentId!);
+    setTeams(data.teams.map(t => ({
+      ...t,
+      team: {
+        ...t.team!,
+        logo_url: t.team?.logo_url || '',
+        owner_id: t.team?.owner_id
+      }
+    })));
+  };
+
+  // Auto-open registration dialog if coming from shared link
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('register') === 'true' && user && tournament?.status === 'open_for_registration') {
+      // Small delay to ensure UI is ready
+      setTimeout(() => {
+        const registerButton = document.querySelector('[data-register-trigger]') as HTMLElement;
+        registerButton?.click();
+      }, 500);
+    }
+  }, [tournament, user]);
 
   if (isLoading) {
     return (
@@ -92,7 +129,7 @@ const TournamentDetailsPage: React.FC = () => {
             "inline-block px-2 py-0.5 rounded-full text-xs font-semibold mb-2",
             getStatusBadge(tournament.status)
           )}>
-            {tournament.status.toUpperCase()}
+            {tournament.status.replace(/_/g, ' ').toUpperCase()}
           </span>
           <h1 className="text-2xl font-bold text-primary-foreground mb-2">
             {tournament.name}
@@ -138,21 +175,48 @@ const TournamentDetailsPage: React.FC = () => {
         </div>
       </div>
 
+
       {/* Tabs */}
       <div className="px-4 mt-6">
         {/* Action Buttons */}
         <div className="mb-4 flex gap-2">
           {isOrganizer ? (
-            <Button onClick={() => setShowInviteDialog(true)} className="gap-2">
-              <Mail className="w-4 h-4" />
-              Invite Teams
-            </Button>
-          ) : (
-            user && tournament.status === 'upcoming' && (
-              <TournamentRegistrationDialog
+            <>
+              <Button onClick={() => setShowInviteDialog(true)} className="gap-2">
+                <Mail className="w-4 h-4" />
+                Invite Teams
+              </Button>
+              <TournamentShareDialog
                 tournamentId={tournamentId!}
                 tournamentName={tournament.name}
               />
+            </>
+          ) : (
+            user && tournament.status === 'open_for_registration' && (
+              pendingTeam ? (
+                <Button variant="destructive" onClick={() => handleWithdraw(pendingTeam.id)}>
+                  Withdraw Request
+                </Button>
+              ) : (
+                <div data-register-trigger>
+                  <TournamentRegistrationDialog
+                    tournamentId={tournamentId!}
+                    tournamentName={tournament.name}
+                    maxTeams={tournament.max_teams}
+                    onRegistered={() => {
+                      getTournamentDetails(tournamentId!).then(data => {
+                        setTeams(data.teams.map(t => ({
+                          ...t,
+                          team: {
+                            ...t.team,
+                            logo_url: t.team.logo_url || ''
+                          }
+                        })));
+                      });
+                    }}
+                  />
+                </div>
+              )
             )
           )}
         </div>

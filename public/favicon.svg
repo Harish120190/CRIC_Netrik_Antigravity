@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="1" dy="1" stdDeviation="1" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Background Circle (optional, but good for visibility) -->
+  <circle cx="32" cy="32" r="30" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- Crossed Bat 1 -->
+  <g transform="translate(32, 32) rotate(45) translate(-32, -32)">
+    <rect x="28" y="10" width="8" height="34" rx="2" fill="#d4a373" stroke="#99582a" stroke-width="2"/>
+    <rect x="30" y="44" width="4" height="12" rx="1" fill="#432818"/>
+  </g>
+
+  <!-- Crossed Bat 2 -->
+  <g transform="translate(32, 32) rotate(-45) translate(-32, -32)">
+    <rect x="28" y="10" width="8" height="34" rx="2" fill="#d4a373" stroke="#99582a" stroke-width="2"/>
+    <rect x="30" y="44" width="4" height="12" rx="1" fill="#432818"/>
+  </g>
+
+  <!-- Ball -->
+  <circle cx="32" cy="24" r="7" fill="#dc2626" stroke="#991b1b" stroke-width="2" filter="url(#shadow)"/>
+  <path d="M28 24 a 5 5 0 0 1 8 0" fill="none" stroke="#fecaca" stroke-width="1.5" stroke-dasharray="3 2" transform="rotate(-45 32 24)"/>
+</svg>

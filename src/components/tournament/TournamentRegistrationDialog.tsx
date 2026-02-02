@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
+import { mockDB } from '@/services/mockDatabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { UserPlus, Loader2 } from 'lucide-react';
@@ -25,18 +25,21 @@ import { UserPlus, Loader2 } from 'lucide-react';
 interface Team {
   id: string;
   name: string;
-  logo_url: string | null;
+  logo_url?: string;
+  captainId?: string;
 }
 
 interface TournamentRegistrationDialogProps {
   tournamentId: string;
   tournamentName: string;
+  maxTeams?: number;
   onRegistered?: () => void;
 }
 
 export function TournamentRegistrationDialog({
   tournamentId,
   tournamentName,
+  maxTeams,
   onRegistered,
 }: TournamentRegistrationDialogProps) {
   const { user } = useAuth();
@@ -46,6 +49,7 @@ export function TournamentRegistrationDialog({
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingTeams, setIsFetchingTeams] = useState(true);
+  const [isTournamentFull, setIsTournamentFull] = useState(false);
 
   useEffect(() => {
     if (open && user) {
@@ -56,43 +60,31 @@ export function TournamentRegistrationDialog({
   const fetchUserTeams = async () => {
     setIsFetchingTeams(true);
     try {
-      // Get teams the user owns
-      const { data: userTeams, error: teamsError } = await supabase
-        .from('teams')
-        .select('id, name, logo_url')
-        .eq('created_by', user?.id);
-
-      if (teamsError) throw teamsError;
+      // Get all teams
+      const allTeams = mockDB.getTeams();
+      // Filter teams where the current user is the captain
+      // Note: In a real app, you'd check created_by or captain_id
+      // For mockDB, we'll assume we can verify ownership via captainId if it exists, 
+      // or just show all teams for demo purposes if captainId isn't strictly enforced.
+      // Let's assume the      
+      // Filter teams where the current user is the owner
+      const userTeams = allTeams.filter(t => t.owner_id === user?.id);
 
       // Get teams already in the tournament
-      const { data: existingTeams } = await supabase
-        .from('tournament_teams')
-        .select('team_id')
-        .eq('tournament_id', tournamentId);
+      const tournamentTeams = mockDB.getTournamentTeams(tournamentId);
+      const existingTeamIds = new Set(tournamentTeams.map(tt => tt.teamId));
 
-      // Get teams with pending registrations
-      const { data: pendingRegs } = await supabase
-        .from('tournament_registrations')
-        .select('team_id')
-        .eq('tournament_id', tournamentId)
-        .eq('status', 'pending');
+      // check if full
+      if (maxTeams) {
+        const approvedCount = tournamentTeams.filter(t => t.status === 'approved').length;
+        if (approvedCount >= maxTeams) {
+          setIsTournamentFull(true);
+        }
+      }
 
-      // Get teams with pending invites
-      const { data: pendingInvites } = await supabase
-        .from('tournament_invites')
-        .select('team_id')
-        .eq('tournament_id', tournamentId)
-        .eq('status', 'pending');
-
-      const existingIds = new Set([
-        ...(existingTeams || []).map((t) => t.team_id),
-        ...(pendingRegs || []).map((r) => r.team_id),
-        ...(pendingInvites || []).map((i) => i.team_id),
-      ]);
-
-      // Filter out teams already in tournament or with pending requests
-      const availableTeams = (userTeams || []).filter(
-        (team) => !existingIds.has(team.id)
+      // Filter out teams already in tournament
+      const availableTeams = userTeams.filter(
+        (team) => !existingTeamIds.has(team.id)
       );
 
       setTeams(availableTeams);
@@ -108,38 +100,16 @@ export function TournamentRegistrationDialog({
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.from('tournament_registrations').insert({
-        tournament_id: tournamentId,
-        team_id: selectedTeamId,
-        requested_by: user.id,
-        message: message.trim() || null,
-      });
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      if (error) throw error;
+      const success = mockDB.registerTeamForTournament(selectedTeamId, tournamentId);
 
-      // Create notification for organizer
-      const { data: tournament } = await supabase
-        .from('tournaments')
-        .select('organizer_id')
-        .eq('id', tournamentId)
-        .single();
-
-      const selectedTeam = teams.find((t) => t.id === selectedTeamId);
-
-      if (tournament?.organizer_id) {
-        await supabase.from('notifications').insert({
-          user_id: tournament.organizer_id,
-          type: 'tournament_registration',
-          title: 'New Registration Request',
-          message: `${selectedTeam?.name} has requested to join ${tournamentName}`,
-          data: {
-            tournament_id: tournamentId,
-            team_id: selectedTeamId,
-          },
-        });
+      if (!success) {
+        throw new Error("Failed to register. Team might be already registered.");
       }
 
-      toast.success('Registration request sent!');
+      toast.success('Registration request sent! Waiting for organizer approval.');
       setOpen(false);
       setSelectedTeamId('');
       setMessage('');
@@ -174,10 +144,14 @@ export function TournamentRegistrationDialog({
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
+          ) : isTournamentFull ? (
+            <div className="text-center py-6 text-destructive">
+              <p className="font-semibold">Tournament Full</p>
+              <p className="text-sm">Maximum number of teams ({maxTeams}) has been reached.</p>
+            </div>
           ) : teams.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              You don't have any teams eligible for registration. Either you don't
-              own any teams, or they're already registered/invited.
+              You don't have any eligible teams. You must be a captain of a team to register.
             </p>
           ) : (
             <>

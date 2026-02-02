@@ -47,7 +47,7 @@ export const useTeamManagement = () => {
         return code;
       };
 
-      const newTeam = mockDB.createTeam(data.name);
+      const newTeam = mockDB.createTeam(data.name, userId);
 
       // Mock additional fields
       const playersJson = localStorage.getItem(STORAGE_KEY_PLAYERS);

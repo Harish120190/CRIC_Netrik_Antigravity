@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -35,6 +36,8 @@ import BallCategoryPage from "./pages/BallCategoryPage";
 import NetworkPage from "./pages/NetworkPage";
 import ActivityFeedPage from "./pages/ActivityFeedPage";
 import ChallengeDashboard from "./components/match/ChallengeDashboard";
+import OrganizerPlayerManagementPage from "./pages/organizer/OrganizerPlayerManagementPage";
+import AdminVerificationDashboard from "./pages/admin/AdminVerificationDashboard";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +87,8 @@ function AppRoutes() {
         <Route path="/organizer/grounds" element={<GroundsPage />} />
         <Route path="/organizer/grounds/add" element={<AddGroundPage />} />
         <Route path="/organizer/tournament/:tournamentId" element={<TournamentManagePage />} />
+        <Route path="/organizer/player-management" element={<OrganizerPlayerManagementPage />} />
+        <Route path="/admin/verification" element={<AdminVerificationDashboard />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
@@ -94,11 +99,13 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <ThemeProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+          <Toaster />
+          <Sonner />
+        </ThemeProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

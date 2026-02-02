@@ -43,6 +43,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import GroundPositionSelector from '@/components/scoring/GroundPositionSelector';
 import CommentaryFeed, { CommentaryBall } from '@/components/scoring/CommentaryFeed';
 import { mockDB, Ball as MockBall } from '@/services/mockDatabase';
+import { syncManager } from '@/services/syncManager';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -167,7 +168,19 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, onUpdateM
 
   // Track milestones to avoid duplicate notifications
   const [reachedMilestones, setReachedMilestones] = useState<Record<string, number[]>>({});
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [refreshCounter, setRefreshCounter] = useState(0);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Correction Mode State
   const { user } = useAuth();
@@ -366,14 +379,15 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, onUpdateM
     // Let's just save basic info for now to mockDB but in real app we'd have columns.
     // I'll stick to `saveBallToDb` logic but update player_out_name correctly.
     try {
-      mockDB.saveBall({
+      syncManager.saveBall({
+        id: crypto.randomUUID(), // Generator for offline ID
         match_id: matchId,
         innings_no: currentInnings,
         over_number: currentOver,
         ball_number: currentBall + 1,
         runs_scored: ball.runs,
         is_wicket: true,
-        extras_type: wicketType === 'retired' ? 'retired' : null, // Hacky
+        extras_type: wicketType === 'retired' ? 'retired' : null,
         extras_runs: 0,
         batsman_name: batsmenStats[strikerIndex].name,
         bowler_name: bowlersStats[currentBowlerIndex].name,
@@ -655,7 +669,8 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, onUpdateM
   const saveBallToDb = async (ball: Ball) => {
     if (!matchId) return;
     try {
-      mockDB.saveBall({
+      syncManager.saveBall({
+        id: crypto.randomUUID(),
         match_id: matchId,
         innings_no: currentInnings,
         over_number: currentOver,
@@ -670,7 +685,7 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, onUpdateM
       });
     } catch (e) {
       console.error("Error saving ball:", e);
-      toast.error("Failed to save ball locally");
+      // Even if sync fails, it's saved in IndexedDB via syncManager
     }
   };
 

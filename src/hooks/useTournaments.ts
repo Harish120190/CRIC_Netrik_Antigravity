@@ -21,6 +21,7 @@ export interface TournamentTeam {
     id: string;
     name: string;
     logo_url: string | null;
+    owner_id?: string;
   };
 }
 

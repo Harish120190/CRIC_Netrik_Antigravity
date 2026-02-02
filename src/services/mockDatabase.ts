@@ -124,7 +124,7 @@ export interface Tournament {
     overs?: number; // Alias
     format?: string; // Alias (e.g. 'T20')
     matchType: 'league' | 'knockout' | 'hybrid';
-    status: 'draft' | 'active' | 'completed' | 'upcoming' | 'ongoing'; // Added common statuses
+    status: 'draft' | 'open_for_registration' | 'ongoing' | 'completed'; // Strict statuses
     created_at: string;
     max_teams?: number; // Added field found in UI
     groups?: string[]; // E.g. ['Group A', 'Group B']
@@ -146,6 +146,20 @@ export interface TournamentTeam {
     status: 'pending' | 'approved' | 'rejected';
     group: string;
     joinedAt: string;
+    points_adjustments?: string[]; // Array of PointAdjustment IDs
+    rejection_reason?: string;
+}
+
+export interface PointAdjustment {
+    id: string;
+    tournament_id: string;
+    team_id: string;
+    points_change: number; // Positive or negative
+    reason: string;
+    category: 'slow_over_rate' | 'code_of_conduct' | 'other';
+    adjusted_by: string; // User ID of organizer
+    adjusted_at: string; // ISO timestamp
+    match_id?: string; // Optional reference to specific match
 }
 
 const STORAGE_KEYS = {
@@ -157,7 +171,12 @@ const STORAGE_KEYS = {
     TOURN_TEAMS: 'cric_hub_tourn_teams',
     POINTS: 'cric_hub_points',
     USERS: 'cric_hub_users',
-    CHALLENGES: 'cric_hub_challenges'
+    CHALLENGES: 'cric_hub_challenges',
+    POINT_ADJUSTMENTS: 'cric_hub_point_adjustments',
+    VERIFICATION_HISTORY: 'cric_hub_verification_history',
+    PROXY_FLAGS: 'cric_hub_proxy_flags',
+    PLAYER_BANS: 'cric_hub_player_bans',
+    TOURNAMENT_PLAYER_STATUS: 'cric_hub_tournament_player_status'
 };
 
 export const mockDB = {
@@ -320,32 +339,21 @@ export const mockDB = {
         try {
             const data = localStorage.getItem(STORAGE_KEYS.TEAMS);
             const storedTeams = data ? JSON.parse(data) : [];
-            const defaultTeams: Team[] = [
-                { id: '1', name: 'Chennai Super Kings', team_code: 'CSK001', owner_id: 'system', created_at: new Date().toISOString() },
-                { id: '2', name: 'Mumbai Indians', team_code: 'MI002', owner_id: 'system', created_at: new Date().toISOString() },
-                { id: '3', name: 'Royal Challengers Bangalore', team_code: 'RCB003', owner_id: 'system', created_at: new Date().toISOString() },
-                { id: '4', name: 'Kolkata Knight Riders', team_code: 'KKR004', owner_id: 'system', created_at: new Date().toISOString() },
-            ];
-            // Combine default and stored teams
-            const allTeams = [...defaultTeams];
-            storedTeams.forEach((st: any) => {
-                if (!allTeams.find(t => t.id === st.id)) {
-                    allTeams.push(st);
-                }
-            });
-            return allTeams;
+            // Return only user-created teams from localStorage
+            // No default teams to avoid owner_id conflicts
+            return storedTeams;
         } catch (e) {
             console.error("Error parsing teams", e);
             return [];
         }
     },
 
-    createTeam: (name: string): Team => {
+    createTeam: (name: string, owner_id?: string): Team => {
         const newTeam: Team = {
             id: generateUUID(),
             name,
             team_code: name.substring(0, 3).toUpperCase() + Math.floor(1000 + Math.random() * 9000),
-            owner_id: 'current-user-id', // Simplified for mock
+            owner_id: owner_id || 'current-user-id', // Use provided owner_id or fallback
             created_at: new Date().toISOString(),
             themeColor: '#3b82f6',
             secondaryColor: '#ffffff',
@@ -354,11 +362,8 @@ export const mockDB = {
         };
         const teams = mockDB.getTeams();
         teams.push(newTeam);
-        // We only save the non-default teams to localStorage to keep it clean, 
-        // but for simplicity here we just save everything that's not in the default list
-        const defaultIds = ['1', '2', '3', '4'];
-        const teamsToSave = teams.filter(t => !defaultIds.includes(t.id));
-        localStorage.setItem(STORAGE_KEYS.TEAMS, JSON.stringify(teamsToSave));
+        // Save all teams to localStorage
+        localStorage.setItem(STORAGE_KEYS.TEAMS, JSON.stringify(teams));
         return newTeam;
     },
 
@@ -517,6 +522,16 @@ export const mockDB = {
     getTournament: (id: string): Tournament | undefined => {
         const tournaments = mockDB.getTournaments();
         return tournaments.find(t => t.id === id);
+    },
+
+    updateTournament: (id: string, updates: Partial<Tournament>): Tournament | null => {
+        const tournaments = mockDB.getTournaments();
+        const index = tournaments.findIndex(t => t.id === id);
+        if (index === -1) return null;
+
+        tournaments[index] = { ...tournaments[index], ...updates };
+        localStorage.setItem(STORAGE_KEYS.TOURNAMENTS, JSON.stringify(tournaments));
+        return tournaments[index];
     },
 
     // --- GROUNDS ---
@@ -813,11 +828,307 @@ export const mockDB = {
         return challenges[index];
     },
 
+    // --- POINT ADJUSTMENTS ---
+    addPointAdjustment: (adjustment: Omit<PointAdjustment, 'id' | 'adjusted_at'>): PointAdjustment => {
+        const adjustments = mockDB.getPointAdjustments(adjustment.tournament_id);
+        const newAdjustment: PointAdjustment = {
+            ...adjustment,
+            id: generateUUID(),
+            adjusted_at: new Date().toISOString()
+        };
+        adjustments.push(newAdjustment);
+        localStorage.setItem(STORAGE_KEYS.POINT_ADJUSTMENTS, JSON.stringify(adjustments));
+
+        // Update TournamentTeam to track this adjustment
+        const tournTeams = mockDB.getTournamentTeams(adjustment.tournament_id);
+        const teamIndex = tournTeams.findIndex(tt => tt.teamId === adjustment.team_id);
+        if (teamIndex !== -1) {
+            if (!tournTeams[teamIndex].points_adjustments) {
+                tournTeams[teamIndex].points_adjustments = [];
+            }
+            tournTeams[teamIndex].points_adjustments!.push(newAdjustment.id);
+            mockDB.updateTournamentTeam(tournTeams[teamIndex].id, { points_adjustments: tournTeams[teamIndex].points_adjustments });
+        }
+
+        return newAdjustment;
+    },
+
+    getPointAdjustments: (tournamentId: string): PointAdjustment[] => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.POINT_ADJUSTMENTS);
+            const all: PointAdjustment[] = data ? JSON.parse(data) : [];
+            return all.filter(adj => adj.tournament_id === tournamentId);
+        } catch (e) {
+            console.error("Error parsing point adjustments", e);
+            return [];
+        }
+    },
+
+    getTeamAdjustments: (teamId: string): PointAdjustment[] => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.POINT_ADJUSTMENTS);
+            const all: PointAdjustment[] = data ? JSON.parse(data) : [];
+            return all.filter(adj => adj.team_id === teamId);
+        } catch (e) {
+            console.error("Error parsing point adjustments", e);
+            return [];
+        }
+    },
+
+    deletePointAdjustment: (id: string): boolean => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.POINT_ADJUSTMENTS);
+            const all: PointAdjustment[] = data ? JSON.parse(data) : [];
+            const filtered = all.filter(adj => adj.id !== id);
+            if (all.length === filtered.length) return false;
+            localStorage.setItem(STORAGE_KEYS.POINT_ADJUSTMENTS, JSON.stringify(filtered));
+            return true;
+        } catch (e) {
+            console.error("Error deleting point adjustment", e);
+            return false;
+        }
+    },
+
     getTeamChallenges: (teamId: string): { sent: any[], received: any[] } => {
         const challenges = mockDB.getChallenges();
         return {
             sent: challenges.filter((c: any) => c.senderTeamId === teamId),
             received: challenges.filter((c: any) => c.receiverTeamId === teamId)
         };
+    },
+
+    // --- PROXY PREVENTION SYSTEM ---
+
+    // Verification History
+    addVerificationHistory: (userId: string, verificationType: string, success: boolean, metadata?: any): any => {
+        const data = localStorage.getItem(STORAGE_KEYS.VERIFICATION_HISTORY);
+        const history: any[] = data ? JSON.parse(data) : [];
+
+        const newEntry = {
+            id: generateUUID(),
+            userId,
+            verificationType,
+            success,
+            attemptedAt: new Date().toISOString(),
+            metadata
+        };
+
+        history.push(newEntry);
+        localStorage.setItem(STORAGE_KEYS.VERIFICATION_HISTORY, JSON.stringify(history));
+        return newEntry;
+    },
+
+    getVerificationHistory: (userId: string): any[] => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.VERIFICATION_HISTORY);
+            const all: any[] = data ? JSON.parse(data) : [];
+            return all.filter(v => v.userId === userId).sort((a, b) =>
+                new Date(b.attemptedAt).getTime() - new Date(a.attemptedAt).getTime()
+            );
+        } catch (e) {
+            console.error("Error parsing verification history", e);
+            return [];
+        }
+    },
+
+    // Proxy Flags
+    addProxyFlag: (userId: string, severity: string, reason: string, reportedBy: string, tournamentId?: string, evidence?: any): any => {
+        const data = localStorage.getItem(STORAGE_KEYS.PROXY_FLAGS);
+        const flags: any[] = data ? JSON.parse(data) : [];
+
+        const newFlag = {
+            id: generateUUID(),
+            userId,
+            tournamentId,
+            severity,
+            reason,
+            reportedBy,
+            reportedAt: new Date().toISOString(),
+            evidence,
+            resolved: false
+        };
+
+        flags.push(newFlag);
+        localStorage.setItem(STORAGE_KEYS.PROXY_FLAGS, JSON.stringify(flags));
+        return newFlag;
+    },
+
+    getProxyFlags: (userId: string): any[] => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.PROXY_FLAGS);
+            const all: any[] = data ? JSON.parse(data) : [];
+            return all.filter(f => f.userId === userId).sort((a, b) =>
+                new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime()
+            );
+        } catch (e) {
+            console.error("Error parsing proxy flags", e);
+            return [];
+        }
+    },
+
+    getAllProxyFlags: (): any[] => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.PROXY_FLAGS);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            console.error("Error parsing proxy flags", e);
+            return [];
+        }
+    },
+
+    resolveProxyFlag: (flagId: string, resolvedBy: string, notes?: string): any | null => {
+        const data = localStorage.getItem(STORAGE_KEYS.PROXY_FLAGS);
+        const flags: any[] = data ? JSON.parse(data) : [];
+        const index = flags.findIndex(f => f.id === flagId);
+
+        if (index === -1) return null;
+
+        flags[index].resolved = true;
+        flags[index].resolvedAt = new Date().toISOString();
+        flags[index].resolvedBy = resolvedBy;
+        flags[index].resolutionNotes = notes;
+
+        localStorage.setItem(STORAGE_KEYS.PROXY_FLAGS, JSON.stringify(flags));
+        return flags[index];
+    },
+
+    // Player Bans
+    banPlayer: (userId: string, organizerId: string, reason: string, isPermanent: boolean, expiresAt?: string, tournamentId?: string, notes?: string): any => {
+        const data = localStorage.getItem(STORAGE_KEYS.PLAYER_BANS);
+        const bans: any[] = data ? JSON.parse(data) : [];
+
+        const newBan = {
+            id: generateUUID(),
+            userId,
+            organizerId,
+            reason,
+            isPermanent,
+            bannedAt: new Date().toISOString(),
+            expiresAt: isPermanent ? null : expiresAt,
+            tournamentId,
+            notes,
+            appealStatus: 'none'
+        };
+
+        bans.push(newBan);
+        localStorage.setItem(STORAGE_KEYS.PLAYER_BANS, JSON.stringify(bans));
+        return newBan;
+    },
+
+    getUserBans: (userId: string): any[] => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.PLAYER_BANS);
+            const all: any[] = data ? JSON.parse(data) : [];
+            return all.filter(b => b.userId === userId).sort((a, b) =>
+                new Date(b.bannedAt).getTime() - new Date(a.bannedAt).getTime()
+            );
+        } catch (e) {
+            console.error("Error parsing player bans", e);
+            return [];
+        }
+    },
+
+    getBannedPlayers: (organizerId: string): any[] => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.PLAYER_BANS);
+            const all: any[] = data ? JSON.parse(data) : [];
+            const now = new Date();
+
+            return all.filter(b => {
+                if (b.organizerId !== organizerId) return false;
+                if (b.isPermanent) return true;
+                if (!b.expiresAt) return false;
+                return new Date(b.expiresAt) > now;
+            });
+        } catch (e) {
+            console.error("Error parsing banned players", e);
+            return [];
+        }
+    },
+
+    isPlayerBanned: (userId: string, organizerId: string): boolean => {
+        const bans = mockDB.getBannedPlayers(organizerId);
+        return bans.some(b => b.userId === userId);
+    },
+
+    removeBan: (banId: string): boolean => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.PLAYER_BANS);
+            const all: any[] = data ? JSON.parse(data) : [];
+            const filtered = all.filter(b => b.id !== banId);
+
+            if (all.length === filtered.length) return false;
+
+            localStorage.setItem(STORAGE_KEYS.PLAYER_BANS, JSON.stringify(filtered));
+            return true;
+        } catch (e) {
+            console.error("Error removing ban", e);
+            return false;
+        }
+    },
+
+    // Tournament Player Status
+    updatePlayerStatus: (userId: string, tournamentId: string, status: string, organizerId: string, reason?: string, notes?: string): any => {
+        const data = localStorage.getItem(STORAGE_KEYS.TOURNAMENT_PLAYER_STATUS);
+        const statuses: any[] = data ? JSON.parse(data) : [];
+
+        // Check if status already exists
+        const existingIndex = statuses.findIndex(
+            s => s.userId === userId && s.tournamentId === tournamentId
+        );
+
+        const statusEntry = {
+            id: existingIndex >= 0 ? statuses[existingIndex].id : generateUUID(),
+            userId,
+            tournamentId,
+            organizerId,
+            status,
+            statusChangedAt: new Date().toISOString(),
+            statusChangedBy: organizerId,
+            reason,
+            notes
+        };
+
+        if (existingIndex >= 0) {
+            statuses[existingIndex] = statusEntry;
+        } else {
+            statuses.push(statusEntry);
+        }
+
+        localStorage.setItem(STORAGE_KEYS.TOURNAMENT_PLAYER_STATUS, JSON.stringify(statuses));
+        return statusEntry;
+    },
+
+    getPlayerStatus: (userId: string, tournamentId: string): any | null => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.TOURNAMENT_PLAYER_STATUS);
+            const all: any[] = data ? JSON.parse(data) : [];
+            return all.find(s => s.userId === userId && s.tournamentId === tournamentId) || null;
+        } catch (e) {
+            console.error("Error getting player status", e);
+            return null;
+        }
+    },
+
+    getUserTournamentStatuses: (userId: string): any[] => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.TOURNAMENT_PLAYER_STATUS);
+            const all: any[] = data ? JSON.parse(data) : [];
+            return all.filter(s => s.userId === userId);
+        } catch (e) {
+            console.error("Error getting user tournament statuses", e);
+            return [];
+        }
+    },
+
+    getTournamentPlayerStatuses: (tournamentId: string): any[] => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.TOURNAMENT_PLAYER_STATUS);
+            const all: any[] = data ? JSON.parse(data) : [];
+            return all.filter(s => s.tournamentId === tournamentId);
+        } catch (e) {
+            console.error("Error getting tournament player statuses", e);
+            return [];
+        }
     }
 };

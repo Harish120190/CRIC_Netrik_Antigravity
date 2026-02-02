@@ -10,6 +10,7 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   updateProfile: (updates: Partial<User>) => Promise<User | null>;
+  verifyOtp: (mobile: string, otp: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,8 +40,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const dbUser = mockDB.getUserByMobile(mobile);
       if (dbUser) {
-        setUser(dbUser);
-        localStorage.setItem('cric_hub_user', JSON.stringify(dbUser));
         return true;
       }
       return false;
@@ -69,8 +68,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (userData: any): Promise<User> => {
     try {
       const newUser = mockDB.createUser(userData);
-      setUser(newUser as User);
-      localStorage.setItem('cric_hub_user', JSON.stringify(newUser));
       return newUser as User;
     } catch (error) {
       console.error('Signup error:', error);
@@ -100,6 +97,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const verifyOtp = async (mobile: string, otp: string): Promise<boolean> => {
+    try {
+      // Mock OTP verification - in real app would verify against backend
+      if (otp === '1234') {
+        const dbUser = mockDB.getUserByMobile(mobile);
+        if (dbUser) {
+          const updatedUser = mockDB.updateUser(dbUser.id, { isMobileVerified: true });
+          if (updatedUser) {
+            setUser(updatedUser as User);
+            localStorage.setItem('cric_hub_user', JSON.stringify(updatedUser)); // Persist session
+            return true;
+          }
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -111,6 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         isLoading,
         updateProfile,
+        verifyOtp,
       }}
     >
       {children}

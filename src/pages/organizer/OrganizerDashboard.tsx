@@ -52,6 +52,14 @@ const OrganizerDashboard: React.FC = () => {
                         <MapPin className="w-6 h-6" />
                         <span>Manage Grounds</span>
                     </Button>
+                    <Button
+                        variant="outline"
+                        className="h-auto py-4 flex flex-col gap-2 col-span-2"
+                        onClick={() => navigate('/organizer/player-management')}
+                    >
+                        <Users className="w-6 h-6" />
+                        <span>Player Management</span>
+                    </Button>
                 </div>
 
                 {/* Recent Tournaments List */}

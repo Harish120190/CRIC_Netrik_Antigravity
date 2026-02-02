@@ -17,8 +17,10 @@ const TournamentTeamsList: React.FC<TournamentTeamsListProps> = ({ teams }) => {
     );
   }
 
-  // Sort by points
-  const sortedTeams = [...teams].sort((a, b) => b.points - a.points);
+  // Sort by points, filter only approved
+  const sortedTeams = [...teams]
+    .filter(t => t.status === 'approved')
+    .sort((a, b) => b.points - a.points);
 
   return (
     <div className="space-y-3">
@@ -38,10 +40,10 @@ const TournamentTeamsList: React.FC<TournamentTeamsListProps> = ({ teams }) => {
           {/* Team Info */}
           <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden">
             {team.team?.logo_url ? (
-              <img 
-                src={team.team.logo_url} 
-                alt="" 
-                className="w-full h-full object-cover" 
+              <img
+                src={team.team.logo_url}
+                alt=""
+                className="w-full h-full object-cover"
               />
             ) : (
               <Shield className="w-6 h-6 text-muted-foreground" />

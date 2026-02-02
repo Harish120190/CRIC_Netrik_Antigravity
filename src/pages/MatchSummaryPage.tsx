@@ -6,6 +6,9 @@ import { Team } from '@/types/cricket';
 import { BatsmanStats } from '@/components/scoring/BattingScorecard';
 import { BowlerStats } from '@/components/scoring/BowlingScorecard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import MatchHighlightsTimeline from '@/components/match/MatchHighlightsTimeline';
+import HighlightsReel from '@/components/match/HighlightsReel';
+import { Film, List } from 'lucide-react';
 
 interface InningsData {
   runs: number;
@@ -36,15 +39,16 @@ interface MatchSummaryPageProps {
   onBack: () => void;
   onNewMatch: () => void;
   matchSummary: MatchSummaryData;
+  matchId?: string; // Optional match ID for highlights
 }
 
-const InningsScoreCard: React.FC<{ innings: InningsData; inningsNumber: number }> = ({ 
-  innings, 
-  inningsNumber 
+const InningsScoreCard: React.FC<{ innings: InningsData; inningsNumber: number }> = ({
+  innings,
+  inningsNumber
 }) => {
   const oversDisplay = `${innings.overs}.${innings.balls}`;
-  const runRate = (innings.overs * 6 + innings.balls) > 0 
-    ? ((innings.runs / (innings.overs * 6 + innings.balls)) * 6).toFixed(2) 
+  const runRate = (innings.overs * 6 + innings.balls) > 0
+    ? ((innings.runs / (innings.overs * 6 + innings.balls)) * 6).toFixed(2)
     : '0.00';
 
   // Find top batsman
@@ -127,12 +131,14 @@ const InningsScoreCard: React.FC<{ innings: InningsData; inningsNumber: number }
   );
 };
 
-const MatchSummaryPage: React.FC<MatchSummaryPageProps> = ({ 
-  onBack, 
+const MatchSummaryPage: React.FC<MatchSummaryPageProps> = ({
+  onBack,
   onNewMatch,
-  matchSummary 
+  matchSummary,
+  matchId
 }) => {
   const { innings1, innings2, venue, result, winner } = matchSummary;
+  const [highlightsView, setHighlightsView] = React.useState<'timeline' | 'reel'>('timeline');
 
   // Determine man of the match from both innings
   const allBatsmen = [
@@ -196,60 +202,110 @@ const MatchSummaryPage: React.FC<MatchSummaryPageProps> = ({
           </div>
         )}
 
-        {/* Innings Tabs */}
-        {innings2 ? (
-          <Tabs defaultValue="innings1" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="innings1">1st Innings</TabsTrigger>
-              <TabsTrigger value="innings2">2nd Innings</TabsTrigger>
-            </TabsList>
-            <TabsContent value="innings1" className="mt-4">
-              <InningsScoreCard innings={innings1} inningsNumber={1} />
-            </TabsContent>
-            <TabsContent value="innings2" className="mt-4">
-              <InningsScoreCard innings={innings2} inningsNumber={2} />
-            </TabsContent>
-          </Tabs>
-        ) : (
-          <InningsScoreCard innings={innings1} inningsNumber={1} />
-        )}
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="scorecard" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
+            <TabsTrigger value="highlights">Highlights</TabsTrigger>
+          </TabsList>
 
-        {/* Match Statistics */}
-        {innings2 && (
-          <div className="bg-card rounded-xl p-4 border border-border">
-            <h3 className="text-foreground font-bold mb-4 flex items-center gap-2">
-              <Target className="w-4 h-4 text-primary" />
-              Match Overview
-            </h3>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{innings1.battingTeam.name}</span>
-                <span className="text-foreground font-bold">
-                  {innings1.runs}/{innings1.wickets} ({innings1.overs}.{innings1.balls} ov)
-                </span>
+          <TabsContent value="scorecard" className="mt-4 space-y-4">
+            {/* Innings Tabs */}
+            {innings2 ? (
+              <Tabs defaultValue="innings1" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="innings1">1st Innings</TabsTrigger>
+                  <TabsTrigger value="innings2">2nd Innings</TabsTrigger>
+                </TabsList>
+                <TabsContent value="innings1" className="mt-4">
+                  <InningsScoreCard innings={innings1} inningsNumber={1} />
+                </TabsContent>
+                <TabsContent value="innings2" className="mt-4">
+                  <InningsScoreCard innings={innings2} inningsNumber={2} />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <InningsScoreCard innings={innings1} inningsNumber={1} />
+            )}
+
+            {/* Match Statistics */}
+            {innings2 && (
+              <div className="bg-card rounded-xl p-4 border border-border">
+                <h3 className="text-foreground font-bold mb-4 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-primary" />
+                  Match Overview
+                </h3>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">{innings1.battingTeam.name}</span>
+                    <span className="text-foreground font-bold">
+                      {innings1.runs}/{innings1.wickets} ({innings1.overs}.{innings1.balls} ov)
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">{innings2.battingTeam.name}</span>
+                    <span className="text-foreground font-bold">
+                      {innings2.runs}/{innings2.wickets} ({innings2.overs}.{innings2.balls} ov)
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{innings2.battingTeam.name}</span>
-                <span className="text-foreground font-bold">
-                  {innings2.runs}/{innings2.wickets} ({innings2.overs}.{innings2.balls} ov)
-                </span>
+            )}
+          </TabsContent>
+
+          <TabsContent value="highlights" className="mt-4 space-y-4">
+            {matchId ? (
+              <>
+                {/* View Toggle */}
+                <div className="flex items-center justify-center gap-2 bg-muted/50 rounded-lg p-1">
+                  <Button
+                    variant={highlightsView === 'timeline' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setHighlightsView('timeline')}
+                    className="flex-1"
+                  >
+                    <List className="w-4 h-4 mr-2" />
+                    Timeline
+                  </Button>
+                  <Button
+                    variant={highlightsView === 'reel' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setHighlightsView('reel')}
+                    className="flex-1"
+                  >
+                    <Film className="w-4 h-4 mr-2" />
+                    Reel
+                  </Button>
+                </div>
+
+                {/* Highlights Content */}
+                {highlightsView === 'timeline' ? (
+                  <MatchHighlightsTimeline matchId={matchId} />
+                ) : (
+                  <HighlightsReel matchId={matchId} />
+                )}
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Highlights not available</p>
               </div>
-            </div>
-          </div>
-        )}
+            )}
+          </TabsContent>
+        </Tabs>
+
 
         {/* Action Buttons */}
         <div className="space-y-3 pt-2">
-          <Button 
-            variant="pitch" 
+          <Button
+            variant="pitch"
             className="w-full h-12"
             onClick={onNewMatch}
           >
             Start New Match
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full h-12"
             onClick={onBack}
           >
