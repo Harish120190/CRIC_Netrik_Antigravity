@@ -7,6 +7,10 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    allowedHosts : [
+      'cric.netrik.ai',
+      'www.cric.netrik.ai'
+      ]
   },
   plugins: [react()],
   resolve: {
