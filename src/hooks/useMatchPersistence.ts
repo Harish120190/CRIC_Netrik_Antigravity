@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/services/api';
 import { toast } from 'sonner';
 
 export interface PersistedMatch {
@@ -38,14 +38,10 @@ export const useMatchPersistence = () => {
   // Fetch all matches
   const fetchMatches = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('matches')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data } = await api.get<PersistedMatch[]>('/matches');
+      // Sort by created_at desc
+      const matches = data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-      if (error) throw error;
-
-      const matches = (data || []) as PersistedMatch[];
       setLiveMatches(matches.filter(m => m.status === 'live'));
       setCompletedMatches(matches.filter(m => m.status === 'completed'));
     } catch (error) {
@@ -63,20 +59,14 @@ export const useMatchPersistence = () => {
     totalOvers: number
   ): Promise<string | null> => {
     try {
-      const { data, error } = await supabase
-        .from('matches')
-        .insert({
-          team1_name: team1Name,
-          team2_name: team2Name,
-          venue: venue,
-          total_overs: totalOvers,
-          status: 'live',
-        })
-        .select()
-        .single();
+      const { data } = await api.post<PersistedMatch>('/matches', {
+        team1_name: team1Name,
+        team2_name: team2Name,
+        venue: venue,
+        total_overs: totalOvers,
+        status: 'live',
+      });
 
-      if (error) throw error;
-      
       toast.success('Match created and synced!');
       return data.id;
     } catch (error) {
@@ -94,18 +84,12 @@ export const useMatchPersistence = () => {
     bowlingTeamName: string
   ): Promise<string | null> => {
     try {
-      const { data, error } = await supabase
-        .from('innings')
-        .insert({
-          match_id: matchId,
-          innings_number: inningsNumber,
-          batting_team_name: battingTeamName,
-          bowling_team_name: bowlingTeamName,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+      const { data } = await api.post<PersistedInnings>('/innings', {
+        match_id: matchId,
+        innings_number: inningsNumber,
+        batting_team_name: battingTeamName,
+        bowling_team_name: bowlingTeamName,
+      });
       return data.id;
     } catch (error) {
       console.error('Error creating innings:', error);
@@ -125,20 +109,15 @@ export const useMatchPersistence = () => {
     sixes: number
   ) => {
     try {
-      const { error } = await supabase
-        .from('innings')
-        .update({
-          runs,
-          wickets,
-          overs,
-          balls,
-          extras,
-          fours,
-          sixes,
-        })
-        .eq('id', inningsId);
-
-      if (error) throw error;
+      await api.put(`/innings/${inningsId}`, {
+        runs,
+        wickets,
+        overs,
+        balls,
+        extras,
+        fours,
+        sixes,
+      });
     } catch (error) {
       console.error('Error updating innings:', error);
     }
@@ -156,20 +135,16 @@ export const useMatchPersistence = () => {
     bowlerName: string
   ) => {
     try {
-      const { error } = await supabase
-        .from('balls')
-        .insert({
-          innings_id: inningsId,
-          over_number: overNumber,
-          ball_number: ballNumber,
-          runs,
-          is_wicket: isWicket,
-          extras_type: extrasType,
-          batsman_name: batsmanName,
-          bowler_name: bowlerName,
-        });
-
-      if (error) throw error;
+      await api.post('/balls', {
+        innings_id: inningsId,
+        over_number: overNumber,
+        ball_number: ballNumber,
+        runs,
+        is_wicket: isWicket,
+        extras_type: extrasType,
+        batsman_name: batsmanName,
+        bowler_name: bowlerName,
+      });
     } catch (error) {
       console.error('Error recording ball:', error);
     }
@@ -182,16 +157,11 @@ export const useMatchPersistence = () => {
     winnerName?: string
   ) => {
     try {
-      const { error } = await supabase
-        .from('matches')
-        .update({
-          status: 'completed',
-          result,
-          winner_name: winnerName || null,
-        })
-        .eq('id', matchId);
-
-      if (error) throw error;
+      await api.put(`/matches/${matchId}`, {
+        status: 'completed',
+        result,
+        winner_name: winnerName || null,
+      });
       toast.success('Match completed and saved!');
     } catch (error) {
       console.error('Error completing match:', error);
@@ -203,16 +173,13 @@ export const useMatchPersistence = () => {
   const getMatchWithInnings = async (matchId: string) => {
     try {
       const [matchRes, inningsRes] = await Promise.all([
-        supabase.from('matches').select('*').eq('id', matchId).single(),
-        supabase.from('innings').select('*').eq('match_id', matchId).order('innings_number'),
+        api.get<PersistedMatch>(`/matches/${matchId}`),
+        api.get<PersistedInnings[]>(`/innings?match_id=${matchId}`),
       ]);
 
-      if (matchRes.error) throw matchRes.error;
-      if (inningsRes.error) throw inningsRes.error;
-
       return {
-        match: matchRes.data as PersistedMatch,
-        innings: inningsRes.data as PersistedInnings[],
+        match: matchRes.data,
+        innings: inningsRes.data.sort((a, b) => a.innings_number - b.innings_number),
       };
     } catch (error) {
       console.error('Error fetching match details:', error);
@@ -220,39 +187,14 @@ export const useMatchPersistence = () => {
     }
   };
 
-  // Set up realtime subscription
+  // Simple polling for updates (replaces supabase realtime)
   useEffect(() => {
     fetchMatches();
+    const interval = setInterval(() => {
+      fetchMatches();
+    }, 5000); // Poll every 5 seconds
 
-    const channel = supabase
-      .channel('match-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'matches',
-        },
-        () => {
-          fetchMatches();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'innings',
-        },
-        () => {
-          fetchMatches();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => clearInterval(interval);
   }, [fetchMatches]);
 
   return {
