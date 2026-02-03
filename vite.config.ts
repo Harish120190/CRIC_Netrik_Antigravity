@@ -10,7 +10,17 @@ export default defineConfig(({ mode }) => ({
     allowedHosts: [
       'cric.netrik.ai',
       'www.cric.netrik.ai'
-    ]
+    ],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+    hmr: {
+      clientPort: 443, // Required for HMR to work behind HTTPS tunnel
+    },
   },
   plugins: [react()],
   resolve: {
