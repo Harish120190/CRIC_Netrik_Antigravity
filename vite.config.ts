@@ -19,7 +19,8 @@ export default defineConfig(({ mode }) => ({
       },
     },
     hmr: {
-      clientPort: 443, // Required for HMR to work behind HTTPS tunnel
+      host: 'cric.netrik.ai',
+      clientPort: 443,
     },
   },
   plugins: [react()],
