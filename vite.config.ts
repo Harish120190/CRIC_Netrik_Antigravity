@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       host: 'cric.netrik.ai',
       clientPort: 443,
+      protocol: 'wss',
     },
   },
   plugins: [react()],
