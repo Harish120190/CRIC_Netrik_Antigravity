@@ -184,7 +184,36 @@ export const mockDB = {
     getUsers: (): User[] => {
         try {
             const data = localStorage.getItem(STORAGE_KEYS.USERS);
-            return data ? JSON.parse(data) : [];
+            const storedUsers = data ? JSON.parse(data) : [];
+
+            // Default admin user
+            const adminUser: User = {
+                id: 'admin-user-id',
+                fullName: 'Admin User',
+                email: 'admin@cric.netrik',
+                mobile: '9999999999',
+                role: 'admin',
+                created_at: new Date().toISOString(),
+                isMobileVerified: true,
+                isEmailVerified: true,
+                verificationBadge: 'gold_tick',
+                followers: [],
+                following: [],
+                privacySettings: {
+                    profileVisibility: 'public',
+                    statsVisibility: 'public'
+                }
+            };
+
+            // Combine admin and stored users, avoid duplicates
+            const allUsers = [adminUser];
+            storedUsers.forEach((u: User) => {
+                if (u.id !== 'admin-user-id' && u.mobile !== '9999999999') {
+                    allUsers.push(u);
+                }
+            });
+
+            return allUsers;
         } catch (e) {
             console.error("Error parsing users", e);
             return [];

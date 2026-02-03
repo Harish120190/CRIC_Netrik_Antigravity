@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Trophy } from '@/components/icons/CricketIcons';
 import { cn } from '@/lib/utils';
 import { mockDB, Tournament } from '@/services/mockDatabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TournamentsPageProps {
   onNavigate: (path: string) => void;
 }
 
 const TournamentsPage: React.FC<TournamentsPageProps> = ({ onNavigate }) => {
+  const { user } = useAuth();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -95,16 +97,18 @@ const TournamentsPage: React.FC<TournamentsPageProps> = ({ onNavigate }) => {
       <Header title="Tournaments" />
 
       <main className="px-4 py-4 max-w-lg mx-auto">
-        {/* Create Tournament Button */}
-        <Button
-          variant="gold"
-          size="lg"
-          className="w-full mb-6 h-14 text-base"
-          onClick={() => onNavigate('/tournaments/create')}
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Create Tournament
-        </Button>
+        {/* Create Tournament Button - Only for authenticated users */}
+        {user && (
+          <Button
+            variant="gold"
+            size="lg"
+            className="w-full mb-6 h-14 text-base"
+            onClick={() => onNavigate('/tournaments/create')}
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Create Tournament
+          </Button>
+        )}
 
         {/* Tournaments List */}
         <section>

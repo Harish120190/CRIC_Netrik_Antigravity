@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { mockDB, User } from '@/services/mockDatabase';
+import api from '@/services/api';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   loginWithPhone: (mobile: string) => Promise<boolean>;
   loginWithEmail: (email: string, password: string) => Promise<boolean>;
   signup: (userData: any) => Promise<User>;
@@ -51,11 +53,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithEmail = async (email: string, password: string): Promise<boolean> => {
     try {
-      const users = mockDB.getUsers();
-      const dbUser = users.find(u => u.email === email && u.password === password);
-      if (dbUser) {
-        setUser(dbUser as User);
-        localStorage.setItem('cric_hub_user', JSON.stringify(dbUser));
+      const response = await api.post('/auth/login', { email, password });
+      if (response.data && response.data.access_token) {
+        const { access_token, user } = response.data;
+        setUser(user);
+        localStorage.setItem('cric_hub_user', JSON.stringify(user));
+        localStorage.setItem('access_token', access_token);
         return true;
       }
       return false;
@@ -67,8 +70,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signup = async (userData: any): Promise<User> => {
     try {
-      const newUser = mockDB.createUser(userData);
-      return newUser as User;
+      const response = await api.post('/auth/register', userData);
+      if (response.data && response.data.access_token) {
+        const { access_token, user } = response.data;
+        setUser(user);
+        localStorage.setItem('cric_hub_user', JSON.stringify(user));
+        localStorage.setItem('access_token', access_token);
+        return user;
+      }
+      throw new Error("Registration failed");
     } catch (error) {
       console.error('Signup error:', error);
       throw error;
@@ -78,7 +88,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setUser(null);
     localStorage.removeItem('cric_hub_user');
+    localStorage.removeItem('access_token');
   };
+
+  // ... keep other methods as is for now or stub them ...
+
 
   const updateProfile = async (updates: Partial<User>): Promise<User | null> => {
     if (!user) return null;
@@ -123,6 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         isAuthenticated: !!user,
+        isAdmin: user?.role === 'admin',
         loginWithPhone,
         loginWithEmail,
         signup,

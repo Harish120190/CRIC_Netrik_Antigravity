@@ -74,7 +74,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const { unreadCount } = useNotifications();
 
   const isActive = (path: string) => {
@@ -196,6 +196,41 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Admin Section - Only for Admin Users */}
+        {isAdmin && (
+          <SidebarGroup>
+            {!collapsed && (
+              <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2 mb-2">
+                Administration
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive('/admin')}
+                    tooltip={collapsed ? 'Admin Panel' : undefined}
+                  >
+                    <NavLink
+                      to="/admin"
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all",
+                        "hover:bg-muted/50",
+                        collapsed && "justify-center px-2"
+                      )}
+                      activeClassName="bg-primary/10 text-primary font-medium"
+                    >
+                      <Settings className={cn("w-5 h-5 shrink-0", isActive('/admin') && "text-primary")} />
+                      {!collapsed && <span>Admin Panel</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {/* Cricket Categories */}
         <SidebarGroup>
