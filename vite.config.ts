@@ -9,8 +9,19 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     allowedHosts: [
       'cric.netrik.ai',
-      'www.cric.netrik.ai'
-    ]
+      'www.cric.netrik.ai',
+      '.netrik.ai'
+    ],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+    hmr: {
+      clientPort: 443,
+    },
   },
   plugins: [react()],
   resolve: {
