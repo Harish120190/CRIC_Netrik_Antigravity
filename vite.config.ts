@@ -18,11 +18,11 @@ export default defineConfig(({ mode }) => ({
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
-    hmr: {
+    hmr: process.env.VITE_TUNNEL ? {
       host: 'cric.netrik.ai',
       clientPort: 443,
       protocol: 'wss',
-    },
+    } : undefined,
   },
   plugins: [react()],
   resolve: {
