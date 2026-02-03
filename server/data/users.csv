@@ -1,0 +1,2 @@
+id,mobile,email,password,fullName,role,isMobileVerified,isEmailVerified
+admin-user-id,9999999999,admin@cric.netrik,$2b$10$o7Rq6Gv1f.l6iSot7M39NO5n5veD48y/SSCf69/ndZyCf1OBHQ6aC,Admin User,admin,true,true
