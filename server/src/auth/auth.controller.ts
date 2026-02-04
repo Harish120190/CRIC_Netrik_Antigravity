@@ -17,4 +17,9 @@ export class AuthController {
     async register(@Body() body) {
         return this.authService.register(body);
     }
+
+    @Post('sync')
+    async sync(@Body() body) {
+        return this.authService.syncUser(body);
+    }
 }

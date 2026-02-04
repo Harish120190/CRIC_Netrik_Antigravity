@@ -38,8 +38,8 @@ export class UsersService {
         return users.find(user => user.id === id);
     }
 
-    async create(user: Omit<User, 'id'>): Promise<User> {
-        const newUser = { ...user, id: uuidv4() };
+    async create(user: Partial<User> & Omit<User, 'id'> & { id?: string }): Promise<User> {
+        const newUser = { ...user, id: user.id || uuidv4() } as User;
         await this.csvService.append(this.filename, newUser);
         return newUser;
     }

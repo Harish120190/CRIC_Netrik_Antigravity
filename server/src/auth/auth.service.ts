@@ -45,4 +45,41 @@ export class AuthService {
         });
         return this.login(newUser);
     }
+
+    async syncUser(firebaseUser: any) {
+        const { uid, email, displayName, photoURL, mobile } = firebaseUser;
+
+        // Try to find by ID (Firebase UID) or Email
+        let user = await this.usersService.findById(uid);
+        if (!user && email) {
+            user = await this.usersService.findOne(email);
+        }
+
+        if (user) {
+            // Update logic could go here if we want to keep fields in sync
+            // For now, just return the existing user (with role)
+            return {
+                access_token: this.jwtService.sign({ username: user.email, sub: user.id, role: user.role }),
+                user: user,
+            };
+        }
+
+        // Create new user
+        const newUser = await this.usersService.create({
+            id: uid,
+            email: email || '',
+            mobile: mobile || '',
+            fullName: displayName || 'User',
+            role: 'player',
+            isMobileVerified: false,
+            isEmailVerified: !!email,
+            password: '', // No password for firebase users
+            verificationBadge: 'none'
+        });
+
+        return {
+            access_token: this.jwtService.sign({ username: newUser.email, sub: newUser.id, role: newUser.role }),
+            user: newUser,
+        };
+    }
 }

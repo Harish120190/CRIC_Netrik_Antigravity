@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-ro
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import SignInPage from "./pages/auth/SignInPage";
@@ -59,40 +60,49 @@ function AppRoutes() {
   return (
     <AppLayout showSidebar={showSidebar}>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Index />} />
-        <Route path="/feed" element={<ActivityFeedPage />} />
         <Route path="/auth/signin" element={<SignInPage />} />
         <Route path="/auth/signup" element={<SignUpPage />} />
         <Route path="/auth/verify-otp" element={<VerifyOtpPage />} />
-        <Route path="/join-team" element={<JoinTeamPage />} />
-        <Route path="/teams" element={<TeamsPage />} />
-        <Route path="/teams/create" element={<CreateTeamPage />} />
-        <Route path="/teams/:teamId" element={<TeamDetailsPage />} />
         <Route path="/tournaments" element={<TournamentsPage onNavigate={handleNavigate} />} />
-        <Route path="/tournaments/create" element={<CreateTournamentPage />} />
         <Route path="/tournaments/:tournamentId" element={<TournamentDetailsPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage onNavigate={handleNavigate} />} />
         <Route path="/leaderboard/:type" element={<LeaderboardPage onNavigate={handleNavigate} />} />
-        <Route path="/my-cricket" element={<MyCricketPage />} />
         <Route path="/matches/ball/:ballType" element={<BallCategoryPage />} />
         <Route path="/matches" element={<MatchHistoryPage onNavigate={handleNavigate} />} />
-        <Route path="/notifications" element={<NotificationsPage onNavigate={handleNavigate} />} />
-        <Route path="/player/:playerId" element={<PlayerProfilePage onNavigate={handleNavigate} />} />
-        <Route path="/profile" element={<ProfilePage />} />
-
-        <Route path="/schedule-match" element={<ScheduleMatchPage />} />
         <Route path="/match/:matchId" element={<MatchLobbyPage />} />
+        <Route path="/player/:playerId" element={<PlayerProfilePage onNavigate={handleNavigate} />} />
+        <Route path="/teams" element={<TeamsPage />} />
+        <Route path="/teams/:teamId" element={<TeamDetailsPage />} />
         <Route path="/looking" element={<LookingPage />} />
-        <Route path="/challenges" element={<ChallengeDashboard />} />
-        <Route path="/organizer" element={<OrganizerDashboard />} />
-        <Route path="/organizer/create-tournament" element={<CreateTournamentPageOrg />} />
-        <Route path="/organizer/grounds" element={<GroundsPage />} />
-        <Route path="/organizer/grounds/add" element={<AddGroundPage />} />
-        <Route path="/organizer/tournament/:tournamentId" element={<TournamentManagePage />} />
-        <Route path="/organizer/player-management" element={<OrganizerPlayerManagementPage />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/verification" element={<AdminVerificationDashboard />} />
-        <Route path="/csv-manager" element={<CSVManagerPage />} />
+        <Route path="/feed" element={<ActivityFeedPage />} />
+
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/join-team" element={<JoinTeamPage />} />
+          <Route path="/teams/create" element={<CreateTeamPage />} />
+          <Route path="/tournaments/create" element={<CreateTournamentPage />} />
+          <Route path="/my-cricket" element={<MyCricketPage />} />
+          <Route path="/notifications" element={<NotificationsPage onNavigate={handleNavigate} />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/schedule-match" element={<ScheduleMatchPage />} />
+          <Route path="/challenges" element={<ChallengeDashboard />} />
+
+          {/* Organizer Routes */}
+          <Route path="/organizer" element={<OrganizerDashboard />} />
+          <Route path="/organizer/create-tournament" element={<CreateTournamentPageOrg />} />
+          <Route path="/organizer/grounds" element={<GroundsPage />} />
+          <Route path="/organizer/grounds/add" element={<AddGroundPage />} />
+          <Route path="/organizer/tournament/:tournamentId" element={<TournamentManagePage />} />
+          <Route path="/organizer/player-management" element={<OrganizerPlayerManagementPage />} />
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/verification" element={<AdminVerificationDashboard />} />
+          <Route path="/csv-manager" element={<CSVManagerPage />} />
+        </Route>
+
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
