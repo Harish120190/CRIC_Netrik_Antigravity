@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -128,35 +129,32 @@ export default function ScheduleMatchPage() {
 
         setLoading(true);
         try {
-            // Mock backend call
-            const newMatch = mockDB.createMatch({
-                item_type: 'match',
-                match_type: matchData.match_type,
-                ball_type: matchData.ball_type,
-                total_overs: matchData.overs,
-                overs: matchData.overs, // keeping both for compat
+            // API call to create match
+            const { data: newMatch } = await api.post('/matches', {
                 team1_name: matchData.team1_name,
                 team2_name: matchData.team2_name,
                 team1_id: matchData.team1_id,
                 team2_id: matchData.team2_id,
+                venue: matchData.ground_name,
+                total_overs: matchData.overs,
+                status: 'scheduled',
+                match_type: matchData.match_type,
+                ball_type: matchData.ball_type,
                 match_date: matchData.match_date,
                 match_time: matchData.match_time,
-                ground_name: matchData.ground_name,
                 city: matchData.city,
                 winning_prize: matchData.winning_prize,
                 match_fee: matchData.match_fee,
-                status: 'scheduled',
-                umpire_name: 'TBD', // Defaults
-                scorer_name: 'TBD',
                 settings: {
                     enableShotDirection: matchData.enable_shot_direction
                 }
-            } as any); // using any to bypass strict type check for now vs interface mismatch
+            });
 
-            toast.success("Match Scheduled Successfully (Offline Mode)!");
+            toast.success("Match Scheduled Successfully!");
             navigate(`/match/${newMatch.id}`);
         } catch (error: any) {
-            toast.error("Error scheduling match: " + error.message);
+            console.error(error);
+            toast.error("Error scheduling match: " + (error.response?.data?.message || error.message));
         } finally {
             setLoading(false);
         }

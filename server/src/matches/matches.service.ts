@@ -9,11 +9,20 @@ export interface Match {
     team2_name: string;
     venue: string;
     total_overs: number;
-    status: 'live' | 'completed';
+    status: 'live' | 'completed' | 'scheduled';
     result: string | null;
     winner_name: string | null;
     created_at: string;
     updated_at: string;
+    match_type?: string;
+    ball_type?: string;
+    match_date?: string;
+    match_time?: string;
+    city?: string;
+    winning_prize?: string;
+    match_fee?: string;
+    team1_id?: string;
+    team2_id?: string;
 }
 
 @Injectable()
@@ -21,7 +30,9 @@ export class MatchesService {
     private readonly filename = 'matches.csv';
     private readonly headers = [
         'id', 'team1_name', 'team2_name', 'venue', 'total_overs',
-        'status', 'result', 'winner_name', 'created_at', 'updated_at'
+        'status', 'result', 'winner_name', 'created_at', 'updated_at',
+        'match_type', 'ball_type', 'match_date', 'match_time', 'city',
+        'winning_prize', 'match_fee', 'team1_id', 'team2_id'
     ];
 
     constructor(private readonly csvService: CsvService) {

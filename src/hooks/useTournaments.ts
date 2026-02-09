@@ -25,6 +25,8 @@ export interface TournamentTeam {
   };
 }
 
+import api from '@/services/api';
+
 export function useTournaments() {
   const [tournaments, setTournaments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,21 +36,24 @@ export function useTournaments() {
   const fetchTournaments = async () => {
     setIsLoading(true);
     try {
-      const data = mockDB.getTournaments();
+      // Fetch from API instead of mockDB
+      const { data } = await api.get<any[]>('/tournaments');
 
       const tournamentsWithCounts = data.map(tournament => {
+        // Hybrid: Teams still from mockDB for now
         const teams = mockDB.getTournamentTeams(tournament.id);
         return {
           ...tournament,
-          start_date: tournament.startDate,
-          end_date: tournament.endDate,
-          format: tournament.matchFormat + ' Overs',
+          start_date: tournament.start_date || tournament.startDate, // Handle both cases just in case
+          end_date: tournament.end_date || tournament.endDate,
+          format: (tournament.overs || tournament.matchFormat) + ' Overs',
           teams_count: teams.length,
         };
       });
 
       setTournaments(tournamentsWithCounts);
     } catch (err: any) {
+      console.error("Error fetching tournaments:", err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -58,14 +63,18 @@ export function useTournaments() {
   const createTournament = async (tournamentData: any) => {
     if (!user) throw new Error('Must be logged in');
 
-    const newTournament = mockDB.createTournament({
+    // API call to create tournament
+    const { data: newTournament } = await api.post('/tournaments', {
       name: tournamentData.name || 'Untitled Tournament',
-      city: tournamentData.city || 'Local',
-      startDate: tournamentData.start_date || new Date().toISOString(),
-      endDate: tournamentData.end_date || new Date().toISOString(),
-      ballType: tournamentData.ballType || 'tennis',
-      matchFormat: tournamentData.overs || 20,
-      matchType: tournamentData.matchType || 'league',
+      venue: tournamentData.venue || tournamentData.city || 'Local',
+      start_date: tournamentData.start_date || new Date().toISOString(),
+      end_date: tournamentData.end_date || new Date().toISOString(),
+      format: tournamentData.format || 'T20',
+      overs: tournamentData.overs || 20,
+      max_teams: tournamentData.max_teams || 8,
+      entry_fee: tournamentData.entry_fee || 0,
+      prize_pool: tournamentData.prize_pool || '',
+      rules: tournamentData.rules || '',
       orgId: user.id,
     });
 
@@ -74,17 +83,19 @@ export function useTournaments() {
   };
 
   const getTournamentDetails = async (tournamentId: string) => {
-    const tournament = mockDB.getTournament(tournamentId);
+    // API call for details
+    const { data: tournament } = await api.get(`/tournaments/${tournamentId}`);
     if (!tournament) throw new Error('Tournament not found');
 
+    // Hybrid: Teams from mockDB
     const teams = mockDB.getTournamentTeams(tournamentId);
     const registeredTeams = mockDB.getTeams();
 
     return {
       tournament: {
         ...tournament,
-        start_date: tournament.startDate,
-        end_date: tournament.endDate,
+        start_date: tournament.start_date,
+        end_date: tournament.end_date,
       },
       teams: teams.map(t => ({
         ...t,

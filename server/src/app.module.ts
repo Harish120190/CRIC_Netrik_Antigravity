@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { MatchesModule } from './matches/matches.module';
 import { InningsModule } from './innings/innings.module';
 import { BallsModule } from './balls/balls.module';
+import { TournamentsModule } from './tournaments/tournaments.module';
 
 import { join } from 'path';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -14,14 +15,15 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..', 'cric-nest-hub-main', 'dist'),
+      rootPath: join(__dirname, '..', '..', 'dist'),
     }),
     CsvModule,
     AuthModule,
     UsersModule,
     MatchesModule,
     InningsModule,
-    BallsModule
+    BallsModule,
+    TournamentsModule
   ],
   controllers: [AppController],
   providers: [AppService],
