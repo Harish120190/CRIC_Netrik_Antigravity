@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ShopProvider } from "@/contexts/ShopContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -41,6 +42,15 @@ import OrganizerPlayerManagementPage from "./pages/organizer/OrganizerPlayerMana
 import AdminVerificationDashboard from "./pages/admin/AdminVerificationDashboard";
 import CSVManagerPage from "./pages/CSVManagerPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AboutUsPage from "./pages/AboutUsPage";
+import ServicesPage from "./pages/ServicesPage";
+import TeamPage from "./pages/TeamPage";
+
+// Shop Pages
+import ShopPage from "./pages/shop/ShopPage";
+import ProductListPage from "./pages/shop/ProductListPage";
+import ProductDetailsPage from "./pages/shop/ProductDetailsPage";
+import CartPage from "./pages/shop/CartPage";
 
 const queryClient = new QueryClient();
 
@@ -70,13 +80,22 @@ function AppRoutes() {
         <Route path="/leaderboard" element={<LeaderboardPage onNavigate={handleNavigate} />} />
         <Route path="/leaderboard/:type" element={<LeaderboardPage onNavigate={handleNavigate} />} />
         <Route path="/matches/ball/:ballType" element={<BallCategoryPage />} />
-        <Route path="/matches" element={<MatchHistoryPage onNavigate={handleNavigate} />} />
+        <Route path="/matches" element={<MatchHistoryPage />} />
         <Route path="/match/:matchId" element={<MatchLobbyPage />} />
         <Route path="/player/:playerId" element={<PlayerProfilePage onNavigate={handleNavigate} />} />
         <Route path="/teams" element={<TeamsPage />} />
         <Route path="/teams/:teamId" element={<TeamDetailsPage />} />
         <Route path="/looking" element={<LookingPage />} />
         <Route path="/feed" element={<ActivityFeedPage />} />
+        <Route path="/about" element={<AboutUsPage />} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/team" element={<TeamPage />} />
+
+        {/* Shop Routes */}
+        <Route path="/shop" element={<ShopPage />} />
+        <Route path="/shop/products" element={<ProductListPage />} />
+        <Route path="/shop/product/:productId" element={<ProductDetailsPage />} />
+        <Route path="/shop/cart" element={<CartPage />} />
 
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
@@ -113,13 +132,15 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <ThemeProvider>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-          <Toaster />
-          <Sonner />
-        </ThemeProvider>
+        <ShopProvider>
+          <ThemeProvider>
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <AppRoutes />
+            </BrowserRouter>
+            <Toaster />
+            <Sonner />
+          </ThemeProvider>
+        </ShopProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

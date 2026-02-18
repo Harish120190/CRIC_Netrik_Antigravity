@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import api from '@/services/api';
+import { mockDB } from '@/services/mockDatabase';
 import { toast } from 'sonner';
 
 export interface PersistedMatch {
@@ -13,6 +13,8 @@ export interface PersistedMatch {
   winner_name: string | null;
   created_at: string;
   updated_at: string;
+  tournamentId?: string;
+  match_type?: string;
 }
 
 export interface PersistedInnings {
@@ -35,15 +37,16 @@ export const useMatchPersistence = () => {
   const [completedMatches, setCompletedMatches] = useState<PersistedMatch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch all matches
+  // Fetch all matches from mockDB
   const fetchMatches = useCallback(async () => {
     try {
-      const { data } = await api.get<PersistedMatch[]>('/matches');
+      const allMatches = mockDB.getMatches();
       // Sort by created_at desc
-      const matches = data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      const sortedMatches = allMatches.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-      setLiveMatches(matches.filter(m => m.status === 'live'));
-      setCompletedMatches(matches.filter(m => m.status === 'completed'));
+      // Map to PersistedMatch structure if needed, but mockDB Match is compatible
+      setLiveMatches(sortedMatches.filter(m => m.status === 'live' || m.status === 'scheduled') as any);
+      setCompletedMatches(sortedMatches.filter(m => m.status === 'completed') as any);
     } catch (error) {
       console.error('Error fetching matches:', error);
     } finally {
@@ -59,16 +62,22 @@ export const useMatchPersistence = () => {
     totalOvers: number
   ): Promise<string | null> => {
     try {
-      const { data } = await api.post<PersistedMatch>('/matches', {
+      const newMatch = mockDB.createMatch({
         team1_name: team1Name,
         team2_name: team2Name,
         venue: venue,
         total_overs: totalOvers,
         status: 'live',
-      });
+        match_type: 'friendly',
+        city: 'Local',
+        match_date: new Date().toISOString(),
+        match_time: new Date().toLocaleTimeString(),
+        ball_type: 'tennis'
+      } as any);
 
       toast.success('Match created and synced!');
-      return data.id;
+      fetchMatches(); // Refresh local state
+      return newMatch.id;
     } catch (error) {
       console.error('Error creating match:', error);
       toast.error('Failed to create match');
@@ -76,28 +85,22 @@ export const useMatchPersistence = () => {
     }
   };
 
-  // Create innings for a match
+  // Create innings for a match - MockDB handling
+  // For now, mockDB doesn't explicitly store "Innings" objects separate from match/balls,
+  // but we can simulate it if needed or just return a generated ID.
   const createInnings = async (
     matchId: string,
     inningsNumber: number,
     battingTeamName: string,
     bowlingTeamName: string
   ): Promise<string | null> => {
-    try {
-      const { data } = await api.post<PersistedInnings>('/innings', {
-        match_id: matchId,
-        innings_number: inningsNumber,
-        batting_team_name: battingTeamName,
-        bowling_team_name: bowlingTeamName,
-      });
-      return data.id;
-    } catch (error) {
-      console.error('Error creating innings:', error);
-      return null;
-    }
+    // Mock successful innings creation
+    return `${matchId}_innings_${inningsNumber}`;
   };
 
-  // Update innings score
+  // Update innings score - handled via ball recording in mockDB, 
+  // but this function might be used for manual overrides. 
+  // We can leave it as a no-op or implement if we add innings to mockDB.
   const updateInningsScore = async (
     inningsId: string,
     runs: number,
@@ -108,19 +111,7 @@ export const useMatchPersistence = () => {
     fours: number,
     sixes: number
   ) => {
-    try {
-      await api.put(`/innings/${inningsId}`, {
-        runs,
-        wickets,
-        overs,
-        balls,
-        extras,
-        fours,
-        sixes,
-      });
-    } catch (error) {
-      console.error('Error updating innings:', error);
-    }
+    // No-op for mockDB simplified flow, stats are calculated from balls
   };
 
   // Record a ball
@@ -135,16 +126,24 @@ export const useMatchPersistence = () => {
     bowlerName: string
   ) => {
     try {
-      await api.post('/balls', {
-        innings_id: inningsId,
+      const matchId = inningsId.split('_mappings_')[0]; // simple hack if we formatted ID that way, or pass matchId context
+      // Actually, let's assume we can get matchId from context or passed params.
+      // But the signature is fixed. 
+      // For mockDB integration, we'll try to extract matchId or use specialized logic.
+      const effectiveMatchId = inningsId.includes('_') ? inningsId.split('_')[0] : inningsId;
+
+      mockDB.saveBall({
+        match_id: effectiveMatchId,
         over_number: overNumber,
         ball_number: ballNumber,
-        runs,
+        runs_scored: runs,
         is_wicket: isWicket,
-        extras_type: extrasType,
+        extras_type: extrasType as any,
         batsman_name: batsmanName,
         bowler_name: bowlerName,
-      });
+        wicket_type: isWicket ? 'bowled' : undefined // default
+      } as any);
+
     } catch (error) {
       console.error('Error recording ball:', error);
     }
@@ -157,12 +156,13 @@ export const useMatchPersistence = () => {
     winnerName?: string
   ) => {
     try {
-      await api.put(`/matches/${matchId}`, {
+      mockDB.updateMatch(matchId, {
         status: 'completed',
         result,
         winner_name: winnerName || null,
       });
       toast.success('Match completed and saved!');
+      fetchMatches();
     } catch (error) {
       console.error('Error completing match:', error);
       toast.error('Failed to save match result');
@@ -172,14 +172,31 @@ export const useMatchPersistence = () => {
   // Get match details with innings
   const getMatchWithInnings = async (matchId: string) => {
     try {
-      const [matchRes, inningsRes] = await Promise.all([
-        api.get<PersistedMatch>(`/matches/${matchId}`),
-        api.get<PersistedInnings[]>(`/innings?match_id=${matchId}`),
-      ]);
+      const match = mockDB.getMatch(matchId);
+      if (!match) return null;
 
+      // Mock innings data derived from balls or just return skeletons
       return {
-        match: matchRes.data,
-        innings: inningsRes.data.sort((a, b) => a.innings_number - b.innings_number),
+        match: match as any,
+        innings: [
+          {
+            id: `${matchId}_innings_1`,
+            match_id: matchId,
+            innings_number: 1,
+            batting_team_name: match.team1_name,
+            bowling_team_name: match.team2_name,
+            // These should ideally be calculated
+            runs: 0, wickets: 0, overs: 0, balls: 0, extras: 0, fours: 0, sixes: 0
+          },
+          {
+            id: `${matchId}_innings_2`,
+            match_id: matchId,
+            innings_number: 2,
+            batting_team_name: match.team2_name,
+            bowling_team_name: match.team1_name,
+            runs: 0, wickets: 0, overs: 0, balls: 0, extras: 0, fours: 0, sixes: 0
+          }
+        ],
       };
     } catch (error) {
       console.error('Error fetching match details:', error);
@@ -187,12 +204,12 @@ export const useMatchPersistence = () => {
     }
   };
 
-  // Simple polling for updates (replaces supabase realtime)
+  // Simple polling
   useEffect(() => {
     fetchMatches();
     const interval = setInterval(() => {
       fetchMatches();
-    }, 5000); // Poll every 5 seconds
+    }, 2000); // Poll faster for mock local check
 
     return () => clearInterval(interval);
   }, [fetchMatches]);

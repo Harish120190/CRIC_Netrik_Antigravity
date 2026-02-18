@@ -9,5 +9,5 @@ export const ProtectedRoute = () => {
         return <div className="flex h-screen items-center justify-center">Loading...</div>;
     }
 
-    return currentUser ? <Outlet /> : <Navigate to="/login" />;
+    return currentUser ? <Outlet /> : <Navigate to="/auth/signin" />;
 };

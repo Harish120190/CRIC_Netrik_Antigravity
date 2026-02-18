@@ -55,25 +55,23 @@ const WicketDetailsDialog: React.FC<WicketDetailsDialogProps> = ({
                 <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
                         <Label>Dismissal Type</Label>
-                        <Select value={wicketType} onValueChange={(v) => setWicketType(v as WicketType)}>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="caught">Caught</SelectItem>
-                                <SelectItem value="bowled">Bowled</SelectItem>
-                                <SelectItem value="lbw">LBW</SelectItem>
-                                <SelectItem value="runout">Run Out</SelectItem>
-                                <SelectItem value="stumped">Stumped</SelectItem>
-                                <SelectItem value="hitwicket">Hit Wicket</SelectItem>
-                                <SelectItem value="retired">Retired</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <div className="grid grid-cols-3 gap-2">
+                            {(['caught', 'bowled', 'lbw', 'runout', 'stumped', 'hitwicket', 'retired'] as WicketType[]).map((type) => (
+                                <Button
+                                    key={type}
+                                    variant={wicketType === type ? "default" : "outline"}
+                                    onClick={() => setWicketType(type)}
+                                    className="capitalize"
+                                >
+                                    {type === 'runout' ? 'Run Out' : type === 'hitwicket' ? 'Hit Wicket' : type}
+                                </Button>
+                            ))}
+                        </div>
                     </div>
 
                     {needsFielder && (
                         <div className="grid gap-2">
-                            <Label>Fielder / Involved Player</Label>
+                            <Label>{wicketType === 'stumped' ? 'Wicket Keeper' : 'Fielder / Involved Player'}</Label>
                             <Select value={fielderId} onValueChange={setFielderId}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select Fielder" />

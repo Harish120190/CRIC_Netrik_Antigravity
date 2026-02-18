@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Settings, Share2, Flag, Users, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Settings, Share2, Flag, Users, RotateCcw, Info, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ScoreBoard from '@/components/scoring/ScoreBoard';
+import ShotTypeSelector from '@/components/scoring/ShotTypeSelector';
 import ScoringPad from '@/components/scoring/ScoringPad';
 import BallTimeline from '@/components/scoring/BallTimeline';
 import PlayerScorecards from '@/components/scoring/PlayerScorecards';
@@ -44,6 +45,7 @@ import GroundPositionSelector from '@/components/scoring/GroundPositionSelector'
 import CommentaryFeed, { CommentaryBall } from '@/components/scoring/CommentaryFeed';
 import { mockDB, Ball as MockBall } from '@/services/mockDatabase';
 import { syncManager } from '@/services/syncManager';
+import api from '@/services/api';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -52,7 +54,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Info, Zap } from 'lucide-react';
 import { getCurrentPowerplay, PowerplayRule } from '@/utils/powerplay';
 import { triggerGlobalNotification } from '@/utils/notifications';
 
@@ -66,6 +67,8 @@ interface Ball {
   overNumber: number;
   commentary?: string;
   isBoundary?: boolean;
+  shotType?: string;
+  shotPosition?: string;
 }
 
 interface InningsData {
@@ -153,6 +156,8 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, onUpdateM
   const [currentInnings, setCurrentInnings] = useState<1 | 2>(1);
   const [firstInningsData, setFirstInningsData] = useState<InningsData | null>(null);
 
+
+
   const [matchSummary, setMatchSummary] = useState<MatchSummaryData | null>(null);
   const [endMatchOpen, setEndMatchOpen] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -223,7 +228,8 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, onUpdateM
     extras: string | undefined,
     isWicket: boolean,
     wicketType?: string,
-    shotPosition?: string
+    shotPosition?: string,
+    shotType?: string
   ): string => {
     let text = "";
     const bowler = bowlerName.split(' ').pop() || bowlerName;
@@ -244,12 +250,13 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, onUpdateM
       else if (extras === 'no-ball') text += "No ball! Overstepping.";
       else text += `${extras} runs conceded.`;
     } else {
-      if (runs === 0) text += "no run, dot ball.";
-      else if (runs === 1) text += `1 run${shotPosition ? `, pushed to ${shotPosition}` : ''}.`;
-      else if (runs === 2) text += `2 runs${shotPosition ? `, driven to ${shotPosition}` : ''}.`;
+      const shotDesc = shotType ? `${shotType}` : '';
+      if (runs === 0) text += `no run, ${shotDesc ? `plays a ${shotDesc}` : 'dot ball'}${shotPosition ? ` to ${shotPosition}` : ''}.`;
+      else if (runs === 1) text += `1 run${shotDesc ? `, plays a ${shotDesc}` : ''}${shotPosition ? ` to ${shotPosition}` : ''}.`;
+      else if (runs === 2) text += `2 runs${shotDesc ? `, excellent ${shotDesc}` : ''}${shotPosition ? ` through ${shotPosition}` : ''}.`;
       else if (runs === 3) text += "3 runs, good running.";
-      else if (runs === 4) text += `FOUR! Cracking shot${shotPosition ? ` through ${shotPosition}` : ''}!`;
-      else if (runs === 6) text += `SIX! That's huge! Over ${shotPosition || 'the rope'}!`;
+      else if (runs === 4) text += `FOUR! ${shotDesc ? `Glorious ${shotDesc}` : 'Cracking shot'}${shotPosition ? ` through ${shotPosition}` : ''}!`;
+      else if (runs === 6) text += `SIX! ${shotDesc ? `Massive ${shotDesc}` : "That's huge"}! Over ${shotPosition || 'the rope'}!`;
     }
     return text;
   };
@@ -577,7 +584,11 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, onUpdateM
 
     const loadMatchState = async () => {
       try {
-        const dbBalls = mockDB.getBalls(matchId);
+        // Fetch from API (Backend Persistence)
+        const response = await api.get(`/balls?match_id=${matchId}`);
+        const dbBalls = response.data;
+        // fallback to mockDB if offline or error?
+        // const dbBalls = mockDB.getBalls(matchId);
         const inningsBalls = dbBalls.filter(b => b.innings_no === currentInnings);
 
         // Reset all states before replay
@@ -855,7 +866,10 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, onUpdateM
   const [pendingScore, setPendingScore] = useState<{ runs: number, extras?: string } | null>(null);
   const [pendingCatch, setPendingCatch] = useState<{ type: WicketType, fielderId?: string, isStrikerOut: boolean } | null>(null);
 
-  const processScore = (runScored: number, extrasType?: string, shotPosition?: string) => {
+  const [showShotSelector, setShowShotSelector] = useState(false);
+  const [pendingShotPosition, setPendingShotPosition] = useState<string | undefined>(undefined);
+
+  const processScore = (runScored: number, extrasType?: string, shotPosition?: string, shotType?: string) => {
     const newBall: Ball = {
       runs: runScored,
       isWicket: false,
@@ -865,6 +879,8 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, onUpdateM
       overNumber: currentOver + 1,
       // shotPosition: shotPosition // Todo: Add to Ball interface if needed, or save via DB extension
       isBoundary: runScored === 4 || runScored === 6,
+      shotPosition,
+      shotType,
       commentary: generateCommentary(
         bowlersStats[currentBowlerIndex].name,
         batsmenStats[strikerIndex].name,
@@ -872,7 +888,8 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, onUpdateM
         extrasType,
         false,
         undefined,
-        shotPosition
+        shotPosition,
+        shotType
       )
     };
 
@@ -989,11 +1006,31 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, onUpdateM
 
   const handleZoneSelect = (position: string) => {
     if (wagonWheelMode === 'score' && pendingScore) {
-      processScore(pendingScore.runs, pendingScore.extras, position);
-      setPendingScore(null);
+      setPendingShotPosition(position);
+      setShowWagonWheel(false);
+      setShowShotSelector(true);
     } else if (wagonWheelMode === 'catch' && pendingCatch) {
       processWicket(pendingCatch.type, pendingCatch.fielderId, pendingCatch.isStrikerOut, position);
       setPendingCatch(null);
+      setShowWagonWheel(false);
+    }
+  };
+
+  const handleShotSelect = (shotType: string) => {
+    if (pendingScore) {
+      processScore(pendingScore.runs, pendingScore.extras, pendingShotPosition, shotType);
+      setPendingScore(null);
+      setPendingShotPosition(undefined);
+      setShowShotSelector(false);
+    }
+  };
+
+  const handleShotSkip = () => {
+    if (pendingScore) {
+      processScore(pendingScore.runs, pendingScore.extras, pendingShotPosition);
+      setPendingScore(null);
+      setPendingShotPosition(undefined);
+      setShowShotSelector(false);
     }
   };
 
@@ -1587,6 +1624,13 @@ const ScoringPage: React.FC<ScoringPageProps> = ({ onBack, onEndMatch, onUpdateM
           onSelect={handleZoneSelect}
           onSkip={handleZoneSkip}
           title={wagonWheelMode === 'catch' ? 'Where was the catch taken?' : 'Select Shot Direction'}
+        />
+
+        <ShotTypeSelector
+          open={showShotSelector}
+          onOpenChange={setShowShotSelector}
+          onSelect={handleShotSelect}
+          onSkip={handleShotSkip}
         />
 
         {/* End Innings / End Match Buttons */}

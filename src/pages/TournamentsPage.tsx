@@ -68,7 +68,7 @@ const TournamentsPage: React.FC<TournamentsPageProps> = ({ onNavigate }) => {
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span className="flex items-center gap-1">
             <Calendar className="w-4 h-4" />
-            {tournament.startDate}
+            {new Date(tournament.startDate).toLocaleDateString()}
           </span>
           <span className="flex items-center gap-1">
             <MapPin className="w-4 h-4" />
@@ -103,7 +103,7 @@ const TournamentsPage: React.FC<TournamentsPageProps> = ({ onNavigate }) => {
             variant="gold"
             size="lg"
             className="w-full mb-6 h-14 text-base"
-            onClick={() => onNavigate('/tournaments/create')}
+            onClick={() => onNavigate('/organizer/create-tournament')}
           >
             <Plus className="w-5 h-5 mr-2" />
             Create Tournament

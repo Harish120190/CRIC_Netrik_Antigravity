@@ -18,7 +18,8 @@ import {
   LayoutList,
   Settings,
   ShieldCheck,
-  Activity
+  Activity,
+  ShoppingBag
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,6 +46,7 @@ const mainNavItems = [
   { title: 'Home', url: '/', icon: Home },
   { title: 'Activity Feed', url: '/feed', icon: Activity },
   { title: 'Teams', url: '/teams', icon: Users },
+  { title: 'Shop', url: '/shop', icon: ShoppingBag },
   { title: 'Tournaments', url: '/tournaments', icon: Trophy },
   { title: 'Network', url: '/network', icon: Users },
   { title: 'Profile', url: '/profile', icon: User },
@@ -66,7 +68,6 @@ const ballTypeItems = [
 const quickActions = [
   { title: 'Create Team', url: '/teams/create', icon: Plus },
   { title: 'Join Team', url: '/join-team', icon: UserPlus },
-  { title: 'Create Tournament', url: '/tournaments/create', icon: Trophy },
 ];
 
 export function AppSidebar() {
@@ -196,6 +197,42 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Organizer Section */}
+        {(user?.role === 'organizer' || isAdmin) && (
+          <SidebarGroup>
+            {!collapsed && (
+              <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2 mb-2">
+                Organizer
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive('/organizer')}
+                    tooltip={collapsed ? 'Dashboard' : undefined}
+                  >
+                    <NavLink
+                      to="/organizer"
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all",
+                        "hover:bg-muted/50",
+                        collapsed && "justify-center px-2"
+                      )}
+                      activeClassName="bg-primary/10 text-primary font-medium"
+                    >
+                      <LayoutDashboard className={cn("w-5 h-5 shrink-0", isActive('/organizer') && "text-primary")} />
+                      {!collapsed && <span>Dashboard</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {/* Admin Section - Only for Admin Users */}
         {isAdmin && (

@@ -7,7 +7,10 @@ export class BallsController {
     constructor(private readonly ballsService: BallsService) { }
 
     @Get()
-    findAll(@Query('innings_id') inningsId?: string) {
+    findAll(@Query('innings_id') inningsId?: string, @Query('match_id') matchId?: string) {
+        if (matchId) {
+            return this.ballsService.findByMatchId(matchId);
+        }
         if (inningsId) {
             return this.ballsService.findByInningsId(inningsId);
         }

@@ -22,7 +22,10 @@ import {
   Circle,
   Dribbble,
   LayoutList,
-  LayoutDashboard
+  LayoutDashboard,
+  ShoppingBag,
+  Info,
+  Briefcase
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,6 +40,7 @@ import BottomNav from './BottomNav';
 const mainNavItems = [
   { title: 'Home', url: '/', icon: Home },
   { title: 'Teams', url: '/teams', icon: Users },
+  { title: 'Shop', url: '/shop', icon: ShoppingBag },
   { title: 'Tournaments', url: '/tournaments', icon: Trophy },
   { title: 'Matches', url: '/matches', icon: History },
   { title: 'Player Leaderboard', url: '/leaderboard/players', icon: Medal },
@@ -57,6 +61,12 @@ const quickActions = [
   { title: 'Join Team', url: '/join-team', icon: UserPlus },
   { title: 'Create Tournament', url: '/tournaments/create', icon: Trophy },
   { title: 'Schedule Match', url: '/schedule-match', icon: Calendar },
+];
+
+const companyNavItems = [
+  { title: 'About Us', url: '/about', icon: Info },
+  { title: 'Services', url: '/services', icon: Briefcase },
+  { title: 'Our Team', url: '/team', icon: Users },
 ];
 
 interface AppLayoutProps {
@@ -235,6 +245,33 @@ export function AppLayout({ children, showSidebar = true }: AppLayoutProps) {
             </nav>
           </div>
         )}
+        {/* Company Section */}
+        <div className="mt-6">
+          {!collapsed && (
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-3">
+              Company
+            </p>
+          )}
+          <nav className="space-y-1">
+            {companyNavItems.map((item) => (
+              <button
+                key={item.title}
+                onClick={() => handleNavClick(item.url)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 text-left group relative overflow-hidden",
+                  "hover:bg-primary/5 hover:text-primary",
+                  collapsed && "justify-center px-3",
+                  isActive(item.url)
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "text-muted-foreground"
+                )}
+              >
+                <item.icon className={cn("w-4 h-4 shrink-0 transition-colors", isActive(item.url) ? "text-primary" : "group-hover:text-primary")} />
+                {!collapsed && <span className="text-sm">{item.title}</span>}
+              </button>
+            ))}
+          </nav>
+        </div>
       </div>
 
       {/* Footer with Profile */}

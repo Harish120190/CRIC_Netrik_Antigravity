@@ -1,135 +1,17 @@
+import { Tournament, Match, Team, User, Ball, TournamentTeam, PointsRecord } from '@/types/cricket';
+import { FixtureGenerator } from './FixtureGenerator';
+
+// Remove local interfaces that are now in cricket.ts if they duplicate/conflict
+// OR just keep them if they are distinct DTOs. 
+// For Tournament, we definitely want the shared one.
+
 export const generateUUID = () => Math.random().toString(36).substring(2, 11);
 
-export interface User {
-    id: string;
-    mobile: string;
-    fullName: string;
-    email?: string;
-    password?: string;
-    avatar_url?: string;
-    role: 'player' | 'organizer' | 'admin' | 'scorer';
-    isMobileVerified: boolean;
-    isEmailVerified?: boolean;
-    verificationBadge?: 'blue_tick' | 'gold_tick' | 'none';
-    following?: string[];
-    followers?: string[];
-    privacySettings?: {
-        profileVisibility: 'public' | 'connections_only' | 'private';
-        statsVisibility: 'public' | 'connections_only' | 'private';
-    };
-    notificationPreferences?: {
-        matchStart: boolean;
-        wickets: boolean;
-        milestones: boolean;
-        results: boolean;
-        teams: string[]; // List of team IDs
-        players: string[]; // List of player IDs
-        tournaments: string[]; // List of tournament IDs
-    };
-    playerRole?: string;
-    battingStyle?: string;
-    bowlingStyle?: string;
-    created_at: string;
-}
+// Retaining User, Team, etc if they are different, but preferably we should unify them all.
+// For now, let's just fix Tournament to allow the creation flow to work.
 
-export interface Team {
-    id: string;
-    name: string;
-    logo_url?: string;
-    logo?: string;
-    team_code: string;
-    owner_id: string;
-    created_at: string;
-    created_by?: string;
-    themeColor?: string;
-    secondaryColor?: string;
-    players?: string[];
-    createdAt?: Date;
-}
+export { type User, type Team, type Match, type Ball, type Tournament };
 
-// Define types locally for the mock DB if not shared yet
-export interface Match {
-    id: string;
-    team1_name: string;
-    team2_name: string;
-    team1_id?: string;
-    team2_id?: string;
-    item_type?: string;
-    match_type: string;
-    ball_type: 'tennis' | 'leather' | 'box' | 'stitch';
-    overs: number;
-    match_date: string;
-    match_time: string;
-    ground_name: string;
-    city: string;
-    winning_prize?: string;
-    match_fee?: string;
-    status: 'scheduled' | 'live' | 'completed' | 'abandoned';
-    result?: string;
-    winner_name?: string;
-    toss_winner?: string;
-    toss_decision?: 'bat' | 'bowl';
-    created_at: string;
-    scorers?: string[]; // User IDs
-    umpires?: string[]; // User IDs
-    team1_score?: string;
-    team2_score?: string;
-    tournament_id?: string;
-    round_name?: string; // E.g. 'Quarter Final', 'Round 1'
-    group_name?: string; // E.g. 'Group A'
-    match_order?: number; // Ordering within a date/round
-}
-
-export interface Ball {
-    id: string;
-    match_id: string;
-    innings_no: number;
-    over_number: number;
-    ball_number: number;
-    bowler_name: string;
-    batsman_name: string;
-    runs_scored: number;
-    extras_type?: string | null;
-    extras_runs: number;
-    is_wicket: boolean;
-    wicket_type?: string;
-    player_out_name?: string;
-    version: number;
-    history?: BallHistoryEntry[];
-    created_at: string;
-}
-
-export interface BallHistoryEntry {
-    version: number;
-    changed_by: string; // User ID
-    changed_at: string;
-    previous_state: Partial<Ball>;
-    change_reason?: string;
-}
-
-export interface Tournament {
-    id: string;
-    orgId: string; // Organizer ID
-    organizer_id?: string; // Alias for UI compatibility
-    name: string;
-    logo?: string;
-    city: string;
-    venue?: string; // Alias for city/location
-    startDate: string;
-    start_date?: string; // Alias
-    endDate: string;
-    end_date?: string; // Alias
-    ballType: 'tennis' | 'leather' | 'box' | 'stitch';
-    matchFormat: number; // Overs
-    overs?: number; // Alias
-    format?: string; // Alias (e.g. 'T20')
-    matchType: 'league' | 'knockout' | 'hybrid';
-    status: 'draft' | 'open_for_registration' | 'ongoing' | 'completed'; // Strict statuses
-    created_at: string;
-    max_teams?: number; // Added field found in UI
-    groups?: string[]; // E.g. ['Group A', 'Group B']
-    rounds?: string[]; // E.g. ['Quarter Final', 'Semi Final', 'Final']
-}
 
 export interface Ground {
     id: string;
@@ -265,6 +147,42 @@ export const mockDB = {
 
     getUserByMobile: (mobile: string): User | undefined => {
         return mockDB.getUsers().find(u => u.mobile === mobile);
+    },
+
+    generateFixtures: (tournamentId: string) => {
+        const tournament = mockDB.getTournament(tournamentId);
+        if (!tournament) return;
+
+        const teamsRecs = mockDB.getTournamentTeams(tournamentId);
+        const approvedTeamIds = teamsRecs.filter(t => t.status === 'approved').map(t => t.teamId);
+
+        // Fetch full team objects
+        const allTeams = mockDB.getTeams();
+        const tournamentTeams = allTeams.filter(t => approvedTeamIds.includes(t.id));
+
+        if (tournamentTeams.length < 2) return;
+
+        // Use the new Fixture Generator
+        // Default to Single Round Robin for now, or fetch from tournament config
+        const matches = FixtureGenerator.generateRoundRobin(
+            tournamentTeams,
+            'single',
+            tournamentId,
+            undefined,
+            new Date(tournament.startDate)
+        );
+
+        // Save matches
+        const existingData = localStorage.getItem(STORAGE_KEYS.MATCHES);
+        const existingMatches: Match[] = existingData ? JSON.parse(existingData) : [];
+
+        // Remove existing future matches for this tournament to avoid dupes if re-generating
+        const keptMatches = existingMatches.filter(m => m.tournamentId !== tournamentId || m.status === 'completed');
+
+        const finalMatches = [...keptMatches, ...matches];
+        localStorage.setItem(STORAGE_KEYS.MATCHES, JSON.stringify(finalMatches));
+
+        return matches;
     },
 
     // Networking Methods

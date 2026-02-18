@@ -1,4 +1,4 @@
-import { mockDB } from "./mockDatabase";
+import api from "./api";
 import { offlineStorage, OfflineBall } from "./offlineStorage";
 import { toast } from "sonner";
 
@@ -56,20 +56,23 @@ class SyncManager {
     }
 
     private async pushBallToServer(ball: OfflineBall) {
-        // Mapping OfflineBall to MockDB format
-        return mockDB.saveBall({
+        // Mapping OfflineBall to API DTO format
+        const payload = {
             match_id: ball.match_id,
             innings_no: ball.innings_no,
             over_number: ball.over_number,
             ball_number: ball.ball_number,
             runs_scored: ball.runs_scored,
             is_wicket: ball.is_wicket,
-            extras_type: ball.extras_type as any,
+            extras_type: ball.extras_type,
             extras_runs: ball.extras_runs,
             batsman_name: ball.batsman_name,
             bowler_name: ball.bowler_name,
             player_out_name: ball.player_out_name
-        });
+        };
+
+        // Post to backend
+        return api.post('/balls', payload);
     }
 }
 
